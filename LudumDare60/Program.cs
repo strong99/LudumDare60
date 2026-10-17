@@ -143,10 +143,14 @@ public sealed class PlayState(App app) : GameState {
     private Camera3D _camera;
     private CountDownCounter _countDownCounter;
     private ScrapCounter _scrapCounter;
+    private Tile? _hoveredTile = null;
+    private Edge? _hoveredEdge = null;
+    private EdgeSide _hoveredEdgeIndex = EdgeSide.North;
     public void Progress(Double deltaTime) {
         var world = app.World!;
 
         HandleScroll();
+        HandleTileHover();
 
         foreach (var tile in world.Tiles) {
             tile.Progress(deltaTime);
@@ -191,6 +195,45 @@ public sealed class PlayState(App app) : GameState {
         _camera.Position += move;
         _camera.Target += move;
     }
+    private void HandleTileHover() {
+        var world = app.World!;
+        var ray = GetScreenToWorldRay(GetMousePosition(), _camera);
+        if (MathF.Abs(ray.Direction.Y) < 1e-6f) {
+            return;
+        }
+
+        _hoveredTile = null;
+
+        foreach (var planeY in (ReadOnlySpan<Single>)[1f, 0f]) {
+            var distance = (planeY - ray.Position.Y) / ray.Direction.Y;
+            if (distance < 0) {
+                continue;
+            }
+
+            var hit = ray.Position + ray.Direction * distance;
+            var tileX = (Int32)MathF.Floor(hit.X);
+            var tileY = (Int32)MathF.Floor(hit.Z);
+            if (tileX < 0 || tileY < 0 || tileX >= world.Size || tileY >= world.Size) {
+                continue;
+            }
+
+            var tile = world.Tiles[tileX, tileY];
+            if (planeY > 0 && tile.Content is not SolidTile) {
+                continue;
+            }
+
+            // Nearest edge
+            var offsetX = hit.X - (tileX + 0.5f);
+            var offsetZ = hit.Z - (tileY + 0.5f);
+            _hoveredEdgeIndex = MathF.Abs(offsetX) > MathF.Abs(offsetZ)
+                ? (offsetX > 0 ? EdgeSide.East : EdgeSide.West)
+                : (offsetZ > 0 ? EdgeSide.South : EdgeSide.North);
+            _hoveredEdge = tile.Content is OpenTile open ? open.Edges[(Int32)_hoveredEdgeIndex] : null;
+
+            _hoveredTile = tile;
+            break;
+        }
+    }
     public void Draw() {
         var world = app.World!;
 
@@ -201,6 +244,13 @@ public sealed class PlayState(App app) : GameState {
         }
         foreach (var enemy in world.Enemies) {
             enemy.Draw();
+        }
+
+        if (_hoveredTile is { } hovered) {
+            var solid = hovered.Content is SolidTile;
+            var height = solid ? 1f : 0.1f;
+            var centre = new Vector3(hovered.X + 0.5f, solid ? 0.5f : -0.05f, hovered.Y + 0.5f);
+            DrawCubeWires(centre, 1.02f, height + 0.02f, 1.02f, Color.Yellow);
         }
 
         EndMode3D();
@@ -253,6 +303,12 @@ public sealed class SolidTile : TileContent {
         DrawCube(centre, 1, 1, 1, Color.Gray);
         DrawCubeWires(centre, 1, 1, 1, Color.DarkGray);
     }
+}
+public enum EdgeSide {
+    North, // -Z
+    East,  // +X
+    South, // +Z
+    West,  // -X
 }
 public sealed class OpenTile : TileContent {
     public OpenTileContent? Content { get; set; }
