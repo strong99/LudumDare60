@@ -16,8 +16,13 @@ public sealed class PlayState(App app) : GameState {
     private Edge? _hoveredEdge = null;
     private EdgeSide _hoveredEdgeIndex = EdgeSide.North;
     private TowerCore _towerCore;
+    private Boolean _showSteamDebug = true;
     public void Progress(Double deltaTime) {
         var world = app.World!;
+
+        if (IsKeyPressed(KeyboardKey.F3)) {
+            _showSteamDebug = !_showSteamDebug;
+        }
 
         HandleScroll();
         if (_buildMenu is null) {
@@ -25,6 +30,7 @@ public sealed class PlayState(App app) : GameState {
         }
         HandleBuildMenu();
 
+        SteamStore.NextFrame();
         foreach (var tile in world.Tiles) {
             tile.Progress(deltaTime);
         }
@@ -168,6 +174,10 @@ public sealed class PlayState(App app) : GameState {
         EndMode3D();
         _ssao.End();
 
+        if (_showSteamDebug) {
+            DrawSteamDebug(world);
+        }
+
         //BeginMode2D();
         //DrawBuildMenu
         //DrawScrapCounter
@@ -176,6 +186,41 @@ public sealed class PlayState(App app) : GameState {
         _buildMenu?.Draw();
         _towerCoreCounter.Draw();
         //EndMode2D();
+    }
+
+    private void DrawSteamDebug(World world) {
+        var seen = new HashSet<SteamStore>();
+        foreach (var tile in world.Tiles) {
+            if (tile.Content is not OpenTile open) {
+                continue;
+            }
+
+            var centre = new Vector3(tile.X + 0.5f, 0f, tile.Y + 0.5f);
+            if (open.Content is SteamConnected machine && seen.Add(machine.Store)) {
+                var s = machine.Store;
+                DrawDebugLabel(centre + new Vector3(0, 0.6f, 0), $"{s.Pressure:0.00} ({s.Steam:0.0}/{s.Volume:0}) d{s.DamagePoints}", 14);
+            }
+
+            for (var i = 0; i < open.Edges.Length; i++) {
+                if (open.Edges[i] is not SteamConnected pipe || !seen.Add(pipe.Store)) {
+                    continue;
+                }
+
+                var offset = (EdgeSide)i switch {
+                    EdgeSide.North => new Vector3(0, 0, -0.5f),
+                    EdgeSide.South => new Vector3(0, 0, 0.5f),
+                    EdgeSide.East => new Vector3(0.5f, 0, 0),
+                    _ => new Vector3(-0.5f, 0, 0),
+                };
+                var label = pipe.Store.DamagePoints > 0 ? $"{pipe.Store.Pressure:0.00} d{pipe.Store.DamagePoints}" : $"{pipe.Store.Pressure:0.00}";
+                DrawDebugLabel(centre + offset + new Vector3(0, 0.3f, 0), label, 10);
+            }
+        }
+    }
+
+    private void DrawDebugLabel(Vector3 position, String text, Int32 fontSize) {
+        var screen = GetWorldToScreen(position, _camera);
+        DrawText(text, (Int32)screen.X - MeasureText(text, fontSize) / 2, (Int32)screen.Y - fontSize / 2, fontSize, Color.Yellow);
     }
     public void Activate() {
         var world = app.World!;

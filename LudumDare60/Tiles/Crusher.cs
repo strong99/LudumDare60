@@ -13,6 +13,7 @@ public sealed unsafe class Crusher : Trap, MultiTileContent {
     private const Single _triggerDistance = 1f;
     private const Single _revolutionsPerSecond = 0.5f;
     private const Int32 _damage = 5;
+    private const Single _steamCost = 1.5f;
 
     private const Int32 _crusherMesh = 0;
     private const Int32 _gearMesh = 1;
@@ -23,6 +24,8 @@ public sealed unsafe class Crusher : Trap, MultiTileContent {
     private readonly Vector2 _position;
     private readonly Tile _tile;
     private readonly HashSet<Enemy> _hitThisStroke = [];
+
+    public SteamStore Store { get; } = new(2f);
 
     private Double _playDuration;
     private Single _extension = 0;
@@ -41,9 +44,10 @@ public sealed unsafe class Crusher : Trap, MultiTileContent {
     }
 
     public void Progress(Double deltaTime) {
+        Store.Step(deltaTime);
         var triggered = _world.Enemies.Any(e => e.IsAlive && Vector2.DistanceSquared(e.Position, _position) <= _triggerDistance * _triggerDistance);
 
-        if (triggered && _extension < _maxExtension) {
+        if (triggered && _extension < _maxExtension && (_extension > 0 || Store.TryConsume(_steamCost))) {
             _extension = Math.Min(_maxExtension, _extension + (Single)deltaTime * _extendSpeed);
         }
         else if (!triggered && _extension > 0) {

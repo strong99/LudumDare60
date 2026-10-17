@@ -8,6 +8,7 @@ public sealed class Spikes : Trap {
     private const Single _maxHeight = 0.3f;
     private const Single _triggerDistance = 1f;
     private const Int32 _damage = 3;
+    private const Single _steamCost = 0.5f;
     private const Double _hitInterval = 0.5;
     private const Int32 _spikesMesh = 1;
 
@@ -15,6 +16,8 @@ public sealed class Spikes : Trap {
     private readonly World _world;
     private readonly Tile _tile;
     private readonly Vector2 _position;
+
+    public SteamStore Store { get; } = new(2f);
 
     private Double _hitCooldown;
     private Single _height = 0;
@@ -29,6 +32,7 @@ public sealed class Spikes : Trap {
     }
 
     public void Progress(Double deltaTime) {
+        Store.Step(deltaTime);
         var triggered = _world.Enemies.Any(e => e.IsAlive && Vector2.DistanceSquared(e.Position, _position) <= _triggerDistance * _triggerDistance);
 
         if (triggered && _height < _maxHeight) {
@@ -40,7 +44,7 @@ public sealed class Spikes : Trap {
 
         if (_height >= _maxHeight) {
             _hitCooldown -= deltaTime;
-            if (_hitCooldown <= 0) {
+            if (_hitCooldown <= 0 && _world.Enemies.Any(e => e.IsAlive && IsOnHitArea(e.Position)) && Store.TryConsume(_steamCost)) {
                 _hitCooldown = _hitInterval;
                 foreach (var enemy in _world.Enemies) {
                     if (enemy.IsAlive && IsOnHitArea(enemy.Position)) {

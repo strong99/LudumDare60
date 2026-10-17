@@ -1,8 +1,20 @@
-﻿using System.Numerics;
+using Raylib_cs;
+using System.Numerics;
+using static Raylib_cs.Raylib;
 
 namespace LudumDare60.Tiles;
 
-public sealed class RelayBoiler : OpenTileContent {
-    public void Progress(Double deltaTime) => throw new NotImplementedException();
-    public void Draw(Vector3 tileCentre) => throw new NotImplementedException();
+public sealed class RelayBoiler : OpenTileContent, SteamConnected {
+    private const Single _volume = 5f;
+    private const Single _scale = 0.7f;
+    private const Int32 _maxDamagePoints = 5;
+    public Boolean RendersOwnFloor { get => false; }
+    public SteamStore Store { get; } = new(_volume, maxDamagePoints: _maxDamagePoints);
+    private readonly ModelHandle _model;
+    public RelayBoiler(ResourceManager resourceManager) {
+        _model = resourceManager.GetOrLoadModel("Assets/Boiler.glb");
+    }
+    public void Progress(Double deltaTime) => Store.Step(deltaTime);
+    public void Draw(Vector3 tileCentre) => Draw(tileCentre, Color.White);
+    public void Draw(Vector3 tileCentre, Color tint) => DrawModelEx(_model, tileCentre, Vector3.UnitY, 0, new Vector3(_scale), tint);
 }

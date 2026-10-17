@@ -70,10 +70,12 @@ public sealed class World {
     public Boolean IsFree(Tile tile) => tile.Content is OpenTile { Content: null };
 
     public void SetContent(Tile tile, OpenTileContent? content) {
-        ClearContent(tile);
+        ClearContentCore(tile);
         if (tile.Content is OpenTile open) {
             open.Content = content;
         }
+
+        SteamLinks.Connect(this);
     }
 
     public Boolean TryPlace(MultiTileContent content) {
@@ -81,15 +83,22 @@ public sealed class World {
             return false;
         }
 
-        SetContent(content.Members[0], content);
+        ClearContentCore(content.Members[0]);
+        ((OpenTile)content.Members[0].Content).Content = content;
         foreach (var tile in content.Members.Skip(1)) {
             ((OpenTile)tile.Content).Content = new ReferenceContent(content);
         }
 
+        SteamLinks.Connect(this);
         return true;
     }
 
     public void ClearContent(Tile tile) {
+        ClearContentCore(tile);
+        SteamLinks.Connect(this);
+    }
+
+    private void ClearContentCore(Tile tile) {
         if (tile.Content is not OpenTile { Content: { } content } open) {
             return;
         }
@@ -111,6 +120,11 @@ public sealed class World {
     }
 
     public void SetEdge(Tile tile, EdgeSide side, Edge? edge) {
+        SetEdgeCore(tile, side, edge);
+        SteamLinks.Connect(this);
+    }
+
+    private void SetEdgeCore(Tile tile, EdgeSide side, Edge? edge) {
         if (tile.Content is OpenTile open) {
             open.Edges[(Int32)side] = edge;
         }

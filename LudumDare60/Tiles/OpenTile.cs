@@ -12,7 +12,12 @@ public sealed class OpenTile : TileContent {
     public OpenTile(ResourceManager resourceManager) {
         _model = resourceManager.GetOrLoadModel("Assets/Floor.glb");
     }
-    public void Progress(Double deltaTime) => Content?.Progress(deltaTime);
+    public void Progress(Double deltaTime) {
+        Content?.Progress(deltaTime);
+        foreach (var edge in Edges) {
+            edge?.Progress(deltaTime);
+        }
+    }
     public void Draw(Vector3 origin) {
         var centre = origin + new Vector3(0.5f, -0.05f, 0.5f);
         if (!HideFloorThisFrame && Content?.RendersOwnFloor != true) {

@@ -28,6 +28,7 @@ public sealed class BuildMenu : UIElement {
         var pipe = new Pipe(resources);
         var wall = new Wall(resources);
         var boiler = new Boiler(resources);
+        var relay = new RelayBoiler(resources);
         var saw = new Saw(resources, world, worldTile);
         var nails = new Spikes(resources, world, worldTile);
         var steam = new Steam(resources, world, worldTile);
@@ -38,12 +39,15 @@ public sealed class BuildMenu : UIElement {
         _options = [
             new("clear edge", 2, () => true, () => world.SetEdge(worldTile, edge, null)),
             new("clear tile", 2, () => true, () => world.ClearContent(worldTile)),
+            new("repair", 5, () => true, () => { foreach (var store in DamagedStores(tile, edge)) { store.Repair(); } }),
             new("pipe", 5, () => true, () => world.SetEdge(worldTile, edge, pipe),
                 (centre, tint) => pipe.Draw(centre, edge, tint)),
             new("wall", 20, () => true, () => world.SetEdge(worldTile, edge, wall),
                 (centre, tint) => wall.Draw(centre, edge, tint)),
             new("boiler", 50, () => true, () => world.SetContent(worldTile, boiler),
                 boiler.Draw, PreviewHasFloor: boiler.RendersOwnFloor),
+            new("relay", 30, () => true, () => world.SetContent(worldTile, relay),
+                relay.Draw, PreviewHasFloor: relay.RendersOwnFloor),
             new("steam", 40, () => true, () => world.SetContent(worldTile, steam),
                 steam.Draw, PreviewHasFloor: steam.RendersOwnFloor),
             new("crusher", 80,
@@ -55,12 +59,23 @@ public sealed class BuildMenu : UIElement {
             new("spikes", 25, () => true, () => world.SetContent(worldTile, nails),
                 nails.Draw, PreviewHasFloor: nails.RendersOwnFloor),
         ];
+        if (!DamagedStores(tile, edge).Any()) {
+            _options = _options.Where(x => x.Label != "repair").ToArray();
+        }
         if (tile.Edges[(Int32)edge] is null) {
             _options = _options.Where(x => x.Label != "clear edge").ToArray();
         }
-        if (tile.Edges[(Int32)edge] is null) {
+        if (tile.Content is null) {
             _options = _options.Where(x => x.Label != "clear tile").ToArray();
         }
+    }
+
+
+    private static IEnumerable<SteamStore> DamagedStores(OpenTile tile, EdgeSide edge) {
+        var content = tile.Content is ReferenceContent reference ? reference.Owner : tile.Content;
+        return new[] { (tile.Edges[(Int32)edge] as SteamConnected)?.Store, (content as SteamConnected)?.Store }
+            .OfType<SteamStore>()
+            .Where(s => s.DamagePoints > 0);
     }
 
     private Single SectorSize => 360f / _options.Length;

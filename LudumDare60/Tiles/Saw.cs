@@ -10,6 +10,7 @@ public sealed unsafe class Saw : Trap {
     private const Single _triggerDistance = 1f;
     private const Single _revolutionsPerSecond = 2f;
     private const Int32 _damage = 1;
+    private const Single _steamCost = 0.25f;
     private const Double _hitInterval = 0.25;
     private const String _fileName = "Assets/Saws.glb";
 
@@ -20,6 +21,8 @@ public sealed unsafe class Saw : Trap {
     private readonly World _world;
     private readonly Vector2 _position;
     private readonly Tile _tile;
+
+    public SteamStore Store { get; } = new(2f);
 
     private Double _hitCooldown;
     private Boolean _playing;
@@ -46,6 +49,7 @@ public sealed unsafe class Saw : Trap {
 
     private const Single _maxHeight = 0.3f;
     public void Progress(Double deltaTime) {
+        Store.Step(deltaTime);
         _triggered = _world.Enemies.Any(e => e.IsAlive && Vector2.DistanceSquared(e.Position, _position) <= _triggerDistance * _triggerDistance);
 
         if (_triggered && _height < _maxHeight) {
@@ -57,7 +61,7 @@ public sealed unsafe class Saw : Trap {
 
         if (_height >= _maxHeight) {
             _hitCooldown -= deltaTime;
-            if (_hitCooldown <= 0) {
+            if (_hitCooldown <= 0 && _world.Enemies.Any(e => e.IsAlive && IsOnHitArea(e.Position)) && Store.TryConsume(_steamCost)) {
                 _hitCooldown = _hitInterval;
                 foreach (var enemy in _world.Enemies) {
                     if (enemy.IsAlive && IsOnHitArea(enemy.Position)) {

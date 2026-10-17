@@ -6,6 +6,7 @@ namespace LudumDare60.Tiles;
 public sealed class Steam : Trap {
     private const Single _triggerDistance = 1f;
     private const Int32 _damage = 1;
+    private const Single _steamCost = 0.5f;
     private const Double _hitInterval = 0.5;
 
     private readonly ModelHandle _model;
@@ -18,6 +19,8 @@ public sealed class Steam : Trap {
 
     private readonly List<Particle> _particles = [];
     private Single _spawnAccumulator;
+    public SteamStore Store { get; } = new(2f);
+
     private Double _hitCooldown;
 
     public Boolean RendersOwnFloor { get => true; }
@@ -30,6 +33,7 @@ public sealed class Steam : Trap {
     }
 
     public void Progress(Double deltaTime) {
+        Store.Step(deltaTime);
         UpdateParticles((Single)deltaTime);
 
         var triggered = _world.Enemies.Any(e => e.IsAlive && Vector2.DistanceSquared(e.Position, _position) <= _triggerDistance * _triggerDistance);
@@ -39,7 +43,7 @@ public sealed class Steam : Trap {
             return;
         }
 
-        if (_world.Enemies.Any(e => e.IsAlive && IsOnHitArea(e.Position))) {
+        if (Store.Steam >= _steamCost && _world.Enemies.Any(e => e.IsAlive && IsOnHitArea(e.Position))) {
             _spawnAccumulator += (Single)deltaTime * _particlesPerSecond;
             while (_spawnAccumulator >= 1f) {
                 _spawnAccumulator -= 1f;
@@ -48,7 +52,7 @@ public sealed class Steam : Trap {
         }
 
         _hitCooldown -= deltaTime;
-        if (_hitCooldown <= 0) {
+        if (_hitCooldown <= 0 && Store.TryConsume(_steamCost)) {
             _hitCooldown = _hitInterval;
             foreach (var enemy in _world.Enemies) {
                 if (enemy.IsAlive && IsOnHitArea(enemy.Position)) {

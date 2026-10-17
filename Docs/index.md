@@ -29,14 +29,16 @@ Traps triggers when an enemy touches the middle. After being activated it has a 
 
 Traps have a chance of receiving damage from every activation
 
-When traps trigger it reduces the available pressure in the network up to the nearest boiler/relay boiler
+When traps trigger they consume steam from their own buffer, which is refilled by the network.
 
 ### Power
-- Boilers - adds 5 pressure to steam
-- Relay boiler - adds 5 volume and reduces loss of pressure by 1 
-- Pipes - adds 1 volume to steam
+Every steam node (boiler, relay boiler, pipe, trap) is a buffer with its own volume. Pressure is steam relative to volume, so a higher volume loses less pressure when steam is taken out.
+- Boiler - volume 10, produces 10 steam per second
+- Relay boiler - volume 5, produces nothing
+- Pipes - volume 1
+- Traps - have their own buffer, volume 2. Every activation takes steam from it; without enough steam the trap doesn't fire
 
-Boilers, Relay Boilers and Pipes have a (small) chance on every tick to receive damage
+Boilers, Relay Boilers and Pipes have a (small) chance on every tick to receive a damage point (max 5).
 
 ### Enemies
 There are three classes of enemies:
@@ -60,15 +62,15 @@ Enemies have a two part memory system:
 Enemies explore the tower, they don't directly know the route. Enemies that make it out report back parts of the tower and it's registered in the shared memory.
 
 ### Pressure system
-When pipes are placed they calculate the distance to the boilers and max pressure taking into account the pressure drop.
+Pipes connect automatically to every pipe that shares a corner of the tile grid, and machinery connects to the pipes on the edges of its tile. Machines on neighbouring tiles share steam directly, without pipes. The layout is worked out when something is placed or removed (`SteamLinks`); after that every node keeps its own neighbour list.
 
-When a trap is attached, this score defines pressure.
+Steam is spread by each node itself, every frame:
+1. Boilers produce steam, and nodes can leak steam in based on its damage points. Damage is not propagated.
+2. Neighbouring nodes equalise pressure. The flow is volume weighted and the rate is capped by the number of connections, so the network is stable.
 
-When a boiler, relay boiler or pipe is placed flood fill the network to calculate new max pressure and volume scores
+Distance loss, trap consumption and leaks therefore emerge from the pressure gradient. A damaged node drains, and its neighbours refill it from the rest of the network.
 
-Every tick a pipe can take damage. Pipes have damage points: 5.
-
-For every damage point the pipe reduces pressure by 0.5 network and propagate upstream.
+Damaged nodes can be repaired for scrap.
 
 ### Pathfinding
 
@@ -140,6 +142,3 @@ Edges share ownership between tiles.
 When one tile removes its edge it's propegated to its neighbour.
 
 
-### Pressure
-
-Pressure(node) = max over boilers of (5 − hops × loss)
