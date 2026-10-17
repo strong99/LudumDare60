@@ -41,7 +41,7 @@ public sealed unsafe class Crusher : Trap, MultiTileContent {
     }
 
     public void Progress(Double deltaTime) {
-        var triggered = _world.Enemies.Any(e => Vector2.DistanceSquared(e.Position, _position) <= _triggerDistance * _triggerDistance);
+        var triggered = _world.Enemies.Any(e => e.IsAlive && Vector2.DistanceSquared(e.Position, _position) <= _triggerDistance * _triggerDistance);
 
         if (triggered && _extension < _maxExtension) {
             _extension = Math.Min(_maxExtension, _extension + (Single)deltaTime * _extendSpeed);
@@ -52,7 +52,7 @@ public sealed unsafe class Crusher : Trap, MultiTileContent {
 
         if (!_damageApplied && _extension > _maxExtension - 0.01f) {
             foreach (var enemy in _world.Enemies) {
-                if (IsOnHitArea(enemy.Position) && _hitThisStroke.Add(enemy)) {
+                if (enemy.IsAlive && IsOnHitArea(enemy.Position) && _hitThisStroke.Add(enemy)) {
                     enemy.HitPoints -= _damage;
                 }
             }

@@ -60,6 +60,11 @@ public sealed class AttackBehaviour(World world, Enemy enemy, Point home) : Enem
     }
 
     public void Progress(Double deltaTime) {
+        if (enemy.HitPoints <= 0) {
+            enemy.Behaviour = new DeadBehaviour(world, enemy);
+            return;
+        }
+
         if (_wall is { } wall) {
             AttackWall(deltaTime, wall.Tile, wall.Side);
         }

@@ -43,12 +43,16 @@ public sealed class ExploreBehaviour(World world, Enemy enemy, Point? home = nul
     }
 
     public void Progress(Double deltaTime) {
+        if (enemy.HitPoints <= 0) {
+            enemy.Behaviour = new DeadBehaviour(world, enemy);
+            return;
+        }
+
         var tile = new Point((Int32)enemy.Position.X, (Int32)enemy.Position.Y);
         if (tile != _lastTile) {
             _lastTile = tile;
             Observe(tile);
 
-            // Attacking a reachable core beats exploring, even halfway along a path.
             if (enemy.Memory.RetrieveOne(MemoryTileType.Core) is { } core
                 && (tile == new Point((Int32)core.X, (Int32)core.Y)
                     || _pathfinder.FindPath(tile, new Point((Int32)core.X, (Int32)core.Y)) is not null)) {
@@ -65,7 +69,6 @@ public sealed class ExploreBehaviour(World world, Enemy enemy, Point? home = nul
 
             if (_path is null) {
                 if (_pathfinder.FindWallToBreach(tile, enemy.Memory) is var (wallPath, side)) {
-                    // The attack behaviour walks to the wall tile itself.
                     var wallTile = wallPath.Count > 0 ? wallPath[^1] : tile;
                     enemy.Behaviour = new AttackBehaviour(world, enemy, _home, wallTile, side);
                 }

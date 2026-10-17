@@ -32,14 +32,14 @@ public sealed class Steam : Trap {
     public void Progress(Double deltaTime) {
         UpdateParticles((Single)deltaTime);
 
-        var triggered = _world.Enemies.Any(e => Vector2.DistanceSquared(e.Position, _position) <= _triggerDistance * _triggerDistance);
+        var triggered = _world.Enemies.Any(e => e.IsAlive && Vector2.DistanceSquared(e.Position, _position) <= _triggerDistance * _triggerDistance);
 
         if (!triggered) {
             _hitCooldown = 0;
             return;
         }
 
-        if (_world.Enemies.Any(e => IsOnHitArea(e.Position))) {
+        if (_world.Enemies.Any(e => e.IsAlive && IsOnHitArea(e.Position))) {
             _spawnAccumulator += (Single)deltaTime * _particlesPerSecond;
             while (_spawnAccumulator >= 1f) {
                 _spawnAccumulator -= 1f;
@@ -51,7 +51,7 @@ public sealed class Steam : Trap {
         if (_hitCooldown <= 0) {
             _hitCooldown = _hitInterval;
             foreach (var enemy in _world.Enemies) {
-                if (IsOnHitArea(enemy.Position)) {
+                if (enemy.IsAlive && IsOnHitArea(enemy.Position)) {
                     enemy.HitPoints -= _damage;
                 }
             }

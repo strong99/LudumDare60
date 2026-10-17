@@ -17,7 +17,8 @@ public sealed class Enemy {
     public required EnemyKind Kind { get; init; }
     public EnemyBehaviour? Behaviour { get; set; }
     public required Memory Memory { get; init; }
-    public Int32 HitPoints { get; set; }
+    public Int32 HitPoints { get; set => field = Math.Max(0, value); }
+    public Boolean IsAlive { get => HitPoints > 0; }
     public Vector2 Position { get; set; }
     public Single FacingRotation { get; set; }
 }

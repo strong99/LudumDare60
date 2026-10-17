@@ -16,6 +16,11 @@ public sealed class ReturnHomeBehaviour(World world, Enemy enemy, Point home) : 
     }
 
     public void Progress(Double deltaTime) {
+        if (enemy.HitPoints <= 0) {
+            enemy.Behaviour = new DeadBehaviour(world, enemy);
+            return;
+        }
+
         var tile = new Point((Int32)enemy.Position.X, (Int32)enemy.Position.Y);
 
         if (_path is null) {

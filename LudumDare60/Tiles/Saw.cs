@@ -46,7 +46,7 @@ public sealed unsafe class Saw : Trap {
 
     private const Single _maxHeight = 0.3f;
     public void Progress(Double deltaTime) {
-        _triggered = _world.Enemies.Any(e => Vector2.DistanceSquared(e.Position, _position) <= _triggerDistance * _triggerDistance);
+        _triggered = _world.Enemies.Any(e => e.IsAlive && Vector2.DistanceSquared(e.Position, _position) <= _triggerDistance * _triggerDistance);
 
         if (_triggered && _height < _maxHeight) {
             _height = Math.Min(_maxHeight, _height + (Single)deltaTime * _raiseSpeed);
@@ -60,7 +60,7 @@ public sealed unsafe class Saw : Trap {
             if (_hitCooldown <= 0) {
                 _hitCooldown = _hitInterval;
                 foreach (var enemy in _world.Enemies) {
-                    if (IsOnHitArea(enemy.Position)) {
+                    if (enemy.IsAlive && IsOnHitArea(enemy.Position)) {
                         enemy.HitPoints -= _damage;
                     }
                 }
