@@ -1,9 +1,11 @@
+using LudumDare60;
 ﻿using static Raylib_cs.Raylib;
 
 public sealed class App : IDisposable {
     private Boolean _active = false;
     private GameState? _nextGameState;
     public World? World { get; set; }
+    public ResourceManager Resources { get; } = new();
     public GameState GameState { get; private set; }
     public void SetNextGameState(GameState state) {
         _nextGameState = state;

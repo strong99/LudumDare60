@@ -12,5 +12,9 @@ public sealed class OpenTile : TileContent {
         DrawCubeWires(centre, 1, 0.1f, 1, Color.Brown);
 
         Content?.Draw();
+
+        for (var i = 0; i < Edges.Length; i++) {
+            Edges[i]?.Draw(centre, (EdgeSide)i);
+        }
     }
 }

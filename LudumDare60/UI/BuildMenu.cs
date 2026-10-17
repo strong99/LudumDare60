@@ -1,3 +1,5 @@
+using LudumDare60.Tiles;
+using LudumDare60;
 ﻿using Raylib_cs;
 using System.Numerics;
 using static Raylib_cs.Raylib;
@@ -13,13 +15,13 @@ public sealed class BuildMenu : UIElement {
     private readonly Vector2 _centre = GetMousePosition();
     private Int32 _hovered = -1;
 
-    public BuildMenu(OpenTile tile, EdgeSide edge, Action close) {
+    public BuildMenu(OpenTile tile, EdgeSide edge, ResourceManager resources, Action close) {
         _close = close;
         _options = [
             ("clear edge", () => tile.Edges[(Int32)edge] = null),
             ("clear tile", () => tile.Content = null),
-            ("pipe", () => tile.Edges[(Int32)edge] = new Pipe()),
-            ("wall", () => tile.Edges[(Int32)edge] = new Wall()),
+            ("pipe", () => tile.Edges[(Int32)edge] = new Pipe(resources)),
+            ("wall", () => tile.Edges[(Int32)edge] = new Wall(resources)),
             ("boiler", () => tile.Content = new Boiler()),
             ("steam trap", () => tile.Content = new Steam()),
             ("crusher", () => tile.Content = new Crusher()),
