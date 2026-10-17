@@ -119,6 +119,8 @@ public sealed class PlayState(App app) : GameState {
 
         BeginMode3D(_camera);
 
+        _buildMenu?.ApplyPreviewState();
+
         foreach (var tile in world.Tiles) {
             tile.Draw();
         }
@@ -146,6 +148,8 @@ public sealed class PlayState(App app) : GameState {
                 DrawCubeWires(edgeCentre, size.X, size.Y, size.Z, Color.Red);
             }
         }
+
+        _buildMenu?.DrawPreview();
 
         EndMode3D();
 

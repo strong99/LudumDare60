@@ -4,7 +4,7 @@ public sealed class World {
     public Int32 Size { get; }
     public Tile[,] Tiles { get; }
     public Enemy[] Enemies { get; } = [];
-    public Int32 Scraps { get; }
+    public Int32 Scraps { get; private set; } = 100;
     public Double Duration { get; }
     public Memory EnemyKnowledge { get; } = new();
 
@@ -16,6 +16,66 @@ public sealed class World {
                 var border = x == 0 || y == 0 || x == size - 1 || y == size - 1;
                 Tiles[x, y] = new Tile(x, y, border ? new SolidTile() : new OpenTile(resourceManager));
             }
+        }
+    }
+
+    public Boolean CanAfford(Int32 cost) => Scraps >= cost;
+
+    public void Spend(Int32 cost) => Scraps -= cost;
+
+    public Tile? GetNeighbour(Tile tile, EdgeSide side) {
+        var (dx, dy) = side switch {
+            EdgeSide.North => (0, -1),
+            EdgeSide.East => (1, 0),
+            EdgeSide.South => (0, 1),
+            _ => (-1, 0),
+        };
+
+        var nx = tile.X + dx;
+        var ny = tile.Y + dy;
+        return nx < 0 || ny < 0 || nx >= Size || ny >= Size ? null : Tiles[nx, ny];
+    }
+
+    public Boolean IsFree(Tile tile) => tile.Content is OpenTile { Content: null };
+
+    public void SetContent(Tile tile, OpenTileContent? content) {
+        ClearContent(tile);
+        if (tile.Content is OpenTile open) {
+            open.Content = content;
+        }
+    }
+
+    public Boolean TryPlace(MultiTileContent content) {
+        if (content.Members.Skip(1).Any(t => !IsFree(t))) {
+            return false;
+        }
+
+        SetContent(content.Members[0], content);
+        foreach (var tile in content.Members.Skip(1)) {
+            ((OpenTile)tile.Content).Content = new ReferenceContent(content);
+        }
+
+        return true;
+    }
+
+    public void ClearContent(Tile tile) {
+        if (tile.Content is not OpenTile { Content: { } content } open) {
+            return;
+        }
+
+        if (content is ReferenceContent reference) {
+            content = reference.Owner;
+        }
+
+        if (content is MultiTileContent multiTileContent) {
+            foreach (var t in multiTileContent.Members) {
+                if (t.Content is OpenTile o) {
+                    o.Content = null;
+                }
+            }
+        }
+        else {
+            open.Content = null;
         }
     }
 

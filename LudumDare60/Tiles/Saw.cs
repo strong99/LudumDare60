@@ -53,7 +53,11 @@ public sealed unsafe class Saw : Trap {
         _playDuration += deltaTime;
     }
 
-    public void Draw(Vector3 tileCentre) {
+    public Boolean RendersOwnFloor { get => true; }
+
+    public void Draw(Vector3 tileCentre) => Draw(tileCentre, Color.White);
+
+    public void Draw(Vector3 tileCentre, Color tint) {
         Model model = _model;
         var angle = (Single)(_playDuration * _revolutionsPerSecond % 1.0 * MathF.Tau);
         var placement = Matrix4x4.CreateScale(_scale) * Matrix4x4.CreateTranslation(tileCentre);
@@ -70,7 +74,7 @@ public sealed unsafe class Saw : Trap {
                     * placement;
             }
 
-            DrawMesh(model.Meshes[i], model.Materials[model.MeshMaterial[i]], Matrix4x4.Transpose(transform));
+            RayLibHelper.DrawMeshWithTint(model, i, transform, tint);
         }
     }
 }

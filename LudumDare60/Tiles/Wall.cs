@@ -11,7 +11,9 @@ public sealed class Wall : Edge {
         _model = manager.GetOrLoadModel("Assets/Wall.glb");
     }
     public void Progress(Double deltaTime) { }
-    public void Draw(Vector3 tileCentre, EdgeSide side) {
+    public void Draw(Vector3 tileCentre, EdgeSide side) => Draw(tileCentre, side, Color.White);
+
+    public void Draw(Vector3 tileCentre, EdgeSide side, Color tint) {
         var (offset, angle) = side switch {
             EdgeSide.North => (new Vector3(0, 0, -0.5f), 0f),
             EdgeSide.South => (new Vector3(0, 0, 0.5f), 0f),
@@ -20,6 +22,6 @@ public sealed class Wall : Edge {
         };
 
         var position = tileCentre + offset;
-        DrawModelEx(_model, position, Vector3.UnitY, angle, new Vector3(_scale), Color.White);
+        DrawModelEx(_model, position, Vector3.UnitY, angle, new Vector3(_scale), tint);
     }
 }
