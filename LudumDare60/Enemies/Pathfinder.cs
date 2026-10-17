@@ -83,7 +83,8 @@ public sealed class Pathfinder(World world) {
                 if (next.X < 0 || next.Y < 0 || next.X >= world.Size || next.Y >= world.Size
                     || previous.ContainsKey(next)
                     || open.Edges[(Int32)side] is Wall
-                    || world.Tiles[next.X, next.Y].Content is not OpenTile) {
+                    || world.Tiles[next.X, next.Y].Content is not OpenTile nextOpen
+                    || nextOpen.Content?.BlocksMovement == true) {
                     continue;
                 }
 

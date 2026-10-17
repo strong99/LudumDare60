@@ -6,6 +6,7 @@ namespace LudumDare60.GameStates;
 
 public sealed class PlayState(App app) : GameState {
     private Camera3D _camera;
+    private SsaoPass _ssao = null!;
     private CountDownCounter _countDownCounter;
     private ScrapCounter _scrapCounter;
     private TowerCoreCounter _towerCoreCounter;
@@ -129,6 +130,7 @@ public sealed class PlayState(App app) : GameState {
     public void Draw() {
         var world = app.World!;
 
+        _ssao.Begin();
         BeginMode3D(_camera);
 
         _buildMenu?.ApplyPreviewState();
@@ -164,6 +166,7 @@ public sealed class PlayState(App app) : GameState {
         _buildMenu?.DrawPreview();
 
         EndMode3D();
+        _ssao.End();
 
         //BeginMode2D();
         //DrawBuildMenu
@@ -184,6 +187,7 @@ public sealed class PlayState(App app) : GameState {
             FovY = 45,
             Projection = CameraProjection.Perspective,
         };
+        _ssao = new SsaoPass(_camera.FovY);
         _waveSpawner = new WaveSpawner(world);
         _countDownCounter = new(3600);
         _scrapCounter = new(() => app.World.Scraps);
@@ -195,6 +199,7 @@ public sealed class PlayState(App app) : GameState {
         _towerCoreCounter = new(() => (Int32)MathF.Ceiling(_towerCore?.HitPoints ?? 0));
     }
     public void Deactivate() {
+        _ssao.Dispose();
 
     }
 }
