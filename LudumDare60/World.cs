@@ -8,40 +8,42 @@ public sealed class World {
     public Double Duration { get; }
     public Memory EnemyKnowledge { get; } = new();
 
-    public World(Int32 size, ResourceManager resourceManager) {
+    public World(Int32 size, ResourceManager resourceManager, Tile[,]? tiles = null) {
         Size = size;
-        Tiles = new Tile[size, size];
+        Tiles = tiles ?? new Tile[size, size];
 
-        var toPlaceSpawners = 2;
-        var baseSpawnChance = 0.2;
-        var borderCount = 4 * size - 4; //4 sides - 4 corners
-        var borderIndex = 0;
+        if (tiles is null) {
+            var toPlaceSpawners = 2;
+            var baseSpawnChance = 0.2;
+            var borderCount = 4 * size - 4; //4 sides - 4 corners
+            var borderIndex = 0;
 
-        var random = new Random();
-        for (var x = 0; x < size; x++) {
-            for (var y = 0; y < size; y++) {
-                var border = x == 0 || y == 0 || x == size - 1 || y == size - 1;
+            var random = new Random();
+            for (var x = 0; x < size; x++) {
+                for (var y = 0; y < size; y++) {
+                    var border = x == 0 || y == 0 || x == size - 1 || y == size - 1;
 
-                TileContent content = border ? new SolidTile() : new OpenTile(resourceManager);
-                if (border) {
-                    if (toPlaceSpawners > 0) {
-                        var lastChanceIndex = borderCount - toPlaceSpawners;
-                        var chance = borderIndex >= lastChanceIndex
-                            ? 1.0
-                            : baseSpawnChance + (1.0 - baseSpawnChance) * borderIndex / lastChanceIndex;
-                        if (random.NextDouble() < chance) {
-                            var spawner = new OpenTile(resourceManager) {
-                                Content = new TowerEntrance(resourceManager)
-                            };
-                            content = spawner;
-                            toPlaceSpawners--;
+                    TileContent content = border ? new SolidTile() : new OpenTile(resourceManager);
+                    if (border) {
+                        if (toPlaceSpawners > 0) {
+                            var lastChanceIndex = borderCount - toPlaceSpawners;
+                            var chance = borderIndex >= lastChanceIndex
+                                ? 1.0
+                                : baseSpawnChance + (1.0 - baseSpawnChance) * borderIndex / lastChanceIndex;
+                            if (random.NextDouble() < chance) {
+                                var spawner = new OpenTile(resourceManager) {
+                                    Content = new TowerEntrance(resourceManager)
+                                };
+                                content = spawner;
+                                toPlaceSpawners--;
+                            }
                         }
+
+                        borderIndex++;
                     }
 
-                    borderIndex++;
+                    Tiles[x, y] = new Tile(x, y, content);
                 }
-
-                Tiles[x, y] = new Tile(x, y, content);
             }
         }
     }

@@ -1,5 +1,6 @@
 using LudumDare60;
-﻿using static Raylib_cs.Raylib;
+using LudumDare60.Generators;
+using static Raylib_cs.Raylib;
 
 namespace LudumDare60;
 
@@ -69,6 +70,8 @@ public sealed class App : IDisposable {
     }
 
     public void CreateNewWorld() {
-        World = new(16, Resources);
+        var worldGen = new CaveWorldGenerator();
+
+        World = new(16, Resources, worldGen.Generate(16, Resources, 100));
     }
 }
