@@ -251,6 +251,20 @@ public sealed class PlayState(App app) : GameState {
             var height = solid ? 1f : 0.1f;
             var centre = new Vector3(hovered.X + 0.5f, solid ? 0.5f : -0.05f, hovered.Y + 0.5f);
             DrawCubeWires(centre, 1.02f, height + 0.02f, 1.02f, Color.Yellow);
+
+            if (!solid) {
+                const Single thickness = 0.1f;
+                var (offset, size) = _hoveredEdgeIndex switch {
+                    EdgeSide.North => (new Vector3(0, 0, -0.5f), new Vector3(1, 0.1f, thickness)),
+                    EdgeSide.South => (new Vector3(0, 0, 0.5f), new Vector3(1, 0.1f, thickness)),
+                    EdgeSide.East => (new Vector3(0.5f, 0, 0), new Vector3(thickness, 0.1f, 1)),
+                    _ => (new Vector3(-0.5f, 0, 0), new Vector3(thickness, 0.1f, 1)),
+                };
+
+                var edgeCentre = centre + offset + new Vector3(0, 0.06f, 0);
+                DrawCube(edgeCentre, size.X, size.Y, size.Z, Color.Orange);
+                DrawCubeWires(edgeCentre, size.X, size.Y, size.Z, Color.Red);
+            }
         }
 
         EndMode3D();
@@ -467,8 +481,10 @@ public sealed class CountDownCounter(Int32 duration) : UIElement {
     }
     public void Draw() {
         var fontSize = 20;
-        var timeLeft = Math.Max(Duration - _duration, 0);
-        var text = $"{(Int32)timeLeft}s";
+        var timeLeft = (Int32)Math.Max(Duration - _duration, 0);
+        var minutes = timeLeft / 60;
+        var seconds = timeLeft % 60;
+        var text = $"{minutes}m{seconds}s";
         var width = GetScreenWidth() - MeasureText(text, fontSize);
 
         DrawText(text, width / 2, 10, fontSize, Color.Red);
