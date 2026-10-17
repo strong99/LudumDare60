@@ -3,7 +3,7 @@ using System.Numerics;
 
 namespace LudumDare60.Tiles;
 
-public sealed class Nails : Trap {
+public sealed class Spikes : Trap {
     private const Single _raiseSpeed = 1.0f;
     private const Single _maxHeight = 0.3f;
     private const Single _triggerDistance = 1f;
@@ -21,7 +21,7 @@ public sealed class Nails : Trap {
 
     public Boolean RendersOwnFloor { get => true; }
 
-    public Nails(ResourceManager resourceManager, World world, Tile tile) {
+    public Spikes(ResourceManager resourceManager, World world, Tile tile) {
         _model = resourceManager.GetOrLoadModel("Assets/Spikes.glb");
         _world = world;
         _tile = tile;

@@ -29,7 +29,7 @@ public sealed class BuildMenu : UIElement {
         var wall = new Wall(resources);
         var boiler = new Boiler(resources);
         var saw = new Saw(resources, world, worldTile);
-        var nails = new Nails(resources, world, worldTile);
+        var nails = new Spikes(resources, world, worldTile);
 
         Tile? CrusherBody() => world.GetNeighbour(worldTile, edge) is { } body && world.IsFree(body) ? body : null;
         _world = world;
