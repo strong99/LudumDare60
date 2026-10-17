@@ -9,6 +9,8 @@ public sealed unsafe class Saw : Trap {
     private const Single _scale = 1.0f;
     private const Single _triggerDistance = 1f;
     private const Single _revolutionsPerSecond = 2f;
+    private const Int32 _damage = 1;
+    private const Double _hitInterval = 0.25;
     private const String _fileName = "Assets/Saws.glb";
 
     private const Int32 _firstBladeMesh = 1;
@@ -17,7 +19,9 @@ public sealed unsafe class Saw : Trap {
     private readonly Vector3[] _pivots;
     private readonly World _world;
     private readonly Vector2 _position;
+    private readonly Tile _tile;
 
+    private Double _hitCooldown;
     private Boolean _playing;
     private Double _playDuration;
     private Boolean _triggered;
@@ -36,6 +40,7 @@ public sealed unsafe class Saw : Trap {
         }
 
         _world = world;
+        _tile = tile;
         _position = new Vector2(tile.X + 0.5f, tile.Y + 0.5f);
     }
 
@@ -50,8 +55,26 @@ public sealed unsafe class Saw : Trap {
             _height = Math.Max(0, _height - (Single)deltaTime * _raiseSpeed);
         }
 
+        if (_height >= _maxHeight) {
+            _hitCooldown -= deltaTime;
+            if (_hitCooldown <= 0) {
+                _hitCooldown = _hitInterval;
+                foreach (var enemy in _world.Enemies) {
+                    if (IsOnHitArea(enemy.Position)) {
+                        enemy.HitPoints -= _damage;
+                    }
+                }
+            }
+        }
+        else {
+            _hitCooldown = 0;
+        }
+
         _playDuration += deltaTime;
     }
+
+    private Boolean IsOnHitArea(Vector2 p) =>
+        p.X >= _tile.X && p.X < _tile.X + 1 && p.Y >= _tile.Y && p.Y < _tile.Y + 1;
 
     public Boolean RendersOwnFloor { get => true; }
 

@@ -36,7 +36,10 @@ public sealed class PlayState(App app) : GameState {
         _buildMenu?.Progress(deltaTime);
         _towerCoreCounter.Progress(deltaTime);
 
-        if (_towerCore.HitPoints <= 0 ) {
+        if (_countDownCounter.TimeUp) {
+            app.SetNextGameState(new GameOverState(app, true));
+        }
+        else if (_towerCore.HitPoints <= 0) {
             app.SetNextGameState(new GameOverState(app, false));
         }
     }
