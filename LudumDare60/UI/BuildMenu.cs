@@ -17,13 +17,13 @@ public sealed class BuildMenu : UIElement {
     private readonly Vector2 _centre = GetMousePosition();
     private Int32 _hovered = -1;
 
-    public BuildMenu(OpenTile tile, EdgeSide edge, ResourceManager resources, Action close) {
+    public BuildMenu(World world, Tile worldTile, OpenTile tile, EdgeSide edge, ResourceManager resources, Action close) {
         _close = close;
         _options = [
-            ("clear edge", () => tile.Edges[(Int32)edge] = null),
+            ("clear edge", () => world.SetEdge(worldTile, edge, null)),
             ("clear tile", () => tile.Content = null),
-            ("pipe", () => tile.Edges[(Int32)edge] = new Pipe(resources)),
-            ("wall", () => tile.Edges[(Int32)edge] = new Wall(resources)),
+            ("pipe", () => world.SetEdge(worldTile, edge, new Pipe(resources))),
+            ("wall", () => world.SetEdge(worldTile, edge, new Wall(resources))),
             ("boiler", () => tile.Content = new Boiler()),
             ("steam trap", () => tile.Content = new Steam()),
             ("crusher", () => tile.Content = new Crusher()),

@@ -105,9 +105,9 @@ public sealed class PlayState(App app) : GameState {
         }
     }
     private void HandleBuildMenu() {
-        if (_buildMenu is null && _hoveredTile is { Content: OpenTile open }) {
+        if (_buildMenu is null && _hoveredTile is { Content: OpenTile open } hovered) {
             if (IsMouseButtonPressed(MouseButton.Left)) {
-                _buildMenu = new BuildMenu(open, _hoveredEdgeIndex, app.Resources, () => _buildMenu = null);
+                _buildMenu = new BuildMenu(app.World!, hovered, open, _hoveredEdgeIndex, app.Resources, () => _buildMenu = null);
             }
         }
         else if (_buildMenu is not null && IsKeyPressed(KeyboardKey.Escape)) {
