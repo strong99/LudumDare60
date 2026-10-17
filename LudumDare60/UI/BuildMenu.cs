@@ -30,6 +30,7 @@ public sealed class BuildMenu : UIElement {
         var boiler = new Boiler(resources);
         var saw = new Saw(resources, world, worldTile);
         var nails = new Spikes(resources, world, worldTile);
+        var steam = new Steam(resources, world, worldTile);
 
         Tile? CrusherBody() => world.GetNeighbour(worldTile, edge) is { } body && world.IsFree(body) ? body : null;
         _world = world;
@@ -43,14 +44,15 @@ public sealed class BuildMenu : UIElement {
                 (centre, tint) => wall.Draw(centre, edge, tint)),
             new("boiler", 50, () => true, () => world.SetContent(worldTile, boiler),
                 boiler.Draw, PreviewHasFloor: boiler.RendersOwnFloor),
-            new("steam trap", 40, () => true, () => world.SetContent(worldTile, new Steam()), PreviewHasFloor: true),
+            new("steam", 40, () => true, () => world.SetContent(worldTile, steam),
+                steam.Draw, PreviewHasFloor: steam.RendersOwnFloor),
             new("crusher", 80,
                 () => CrusherBody() is not null,
                 () => world.TryPlace(new Crusher(resources, world, worldTile, CrusherBody()!, edge)),
                 (centre, tint) => Crusher.Draw(crusherModel, centre, edge, 0, 0, tint)),
             new("saw", 60, () => true, () => world.SetContent(worldTile, saw),
                 saw.Draw, PreviewHasFloor: saw.RendersOwnFloor),
-            new("nails", 25, () => true, () => world.SetContent(worldTile, nails),
+            new("spikes", 25, () => true, () => world.SetContent(worldTile, nails),
                 nails.Draw, PreviewHasFloor: nails.RendersOwnFloor),
         ];
         if (tile.Edges[(Int32)edge] is null) {

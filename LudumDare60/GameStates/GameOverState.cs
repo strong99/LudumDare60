@@ -6,6 +6,7 @@ namespace LudumDare60.GameStates;
 
 public sealed class GameOverState(App app, Boolean win) : GameState {
     private Camera3D _camera;
+    private SsaoPass _ssao = null!;
     public void Progress(Double deltaTime) {
         if (IsKeyPressed(KeyboardKey.Escape)) {
             app.SetNextGameState(new MenuState(app));
@@ -14,6 +15,7 @@ public sealed class GameOverState(App app, Boolean win) : GameState {
     public void Draw() {
         var world = app.World!;
 
+        _ssao.Begin();
         BeginMode3D(_camera);
         foreach (var tile in world.Tiles) {
             tile.Draw();
@@ -22,6 +24,7 @@ public sealed class GameOverState(App app, Boolean win) : GameState {
             enemy.Draw();
         }
         EndMode3D();
+        _ssao.End();
 
         var width = GetScreenWidth();
         var height = GetScreenHeight();
@@ -45,8 +48,9 @@ public sealed class GameOverState(App app, Boolean win) : GameState {
             FovY = 45,
             Projection = CameraProjection.Perspective,
         };
+        _ssao = new SsaoPass(_camera.FovY);
     }
     public void Deactivate() {
-        SetExitKey(KeyboardKey.Escape);
+        _ssao.Dispose();
     }
 }

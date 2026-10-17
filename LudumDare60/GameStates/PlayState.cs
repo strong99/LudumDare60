@@ -200,6 +200,5 @@ public sealed class PlayState(App app) : GameState {
     }
     public void Deactivate() {
         _ssao.Dispose();
-
     }
 }
