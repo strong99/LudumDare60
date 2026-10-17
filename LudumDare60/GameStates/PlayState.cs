@@ -8,6 +8,7 @@ public sealed class PlayState(App app) : GameState {
     private Camera3D _camera;
     private CountDownCounter _countDownCounter;
     private ScrapCounter _scrapCounter;
+    private WaveSpawner _waveSpawner = null!;
     private BuildMenu? _buildMenu;
     private Tile? _hoveredTile = null;
     private Edge? _hoveredEdge = null;
@@ -24,6 +25,7 @@ public sealed class PlayState(App app) : GameState {
         foreach (var tile in world.Tiles) {
             tile.Progress(deltaTime);
         }
+        _waveSpawner.Progress(deltaTime);
         foreach (var enemy in world.Enemies) {
             enemy.Progress(deltaTime);
         }
@@ -171,6 +173,7 @@ public sealed class PlayState(App app) : GameState {
             FovY = 45,
             Projection = CameraProjection.Perspective,
         };
+        _waveSpawner = new WaveSpawner(world);
         _countDownCounter = new(3600);
         _scrapCounter = new(() => app.World.Scraps);
     }

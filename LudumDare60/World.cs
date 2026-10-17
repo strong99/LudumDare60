@@ -1,9 +1,11 @@
-﻿namespace LudumDare60;
+﻿using System.Collections.ObjectModel;
+
+namespace LudumDare60;
 
 public sealed class World {
     public Int32 Size { get; }
     public Tile[,] Tiles { get; }
-    public Enemy[] Enemies { get; } = [];
+    public Collection<Enemy> Enemies { get; } = [];
     public Int32 Scraps { get; private set; } = 100;
     public Double Duration { get; }
     public Memory EnemyKnowledge { get; } = new();

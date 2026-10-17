@@ -1,4 +1,4 @@
-﻿namespace LudumDare60.Behaviours;
+﻿namespace LudumDare60.Enemies;
 
 public sealed class ExploreBehaviour : EnemyBehaviour {
     public void Progress(Double deltaTime) => throw new NotImplementedException();
