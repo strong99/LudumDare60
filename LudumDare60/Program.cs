@@ -143,6 +143,7 @@ public sealed class PlayState(App app) : GameState {
     private Camera3D _camera;
     private CountDownCounter _countDownCounter;
     private ScrapCounter _scrapCounter;
+    private BuildMenu? _buildMenu;
     private Tile? _hoveredTile = null;
     private Edge? _hoveredEdge = null;
     private EdgeSide _hoveredEdgeIndex = EdgeSide.North;
@@ -150,7 +151,10 @@ public sealed class PlayState(App app) : GameState {
         var world = app.World!;
 
         HandleScroll();
-        HandleTileHover();
+        if (_buildMenu is null) {
+            HandleTileHover();
+        }
+        HandleBuildMenu();
 
         foreach (var tile in world.Tiles) {
             tile.Progress(deltaTime);
@@ -160,6 +164,7 @@ public sealed class PlayState(App app) : GameState {
         }
         _countDownCounter.Progress(deltaTime);
         _scrapCounter.Progress(deltaTime);
+        _buildMenu?.Progress(deltaTime);
     }
     private void HandleScroll() {
         const Single speed = 10f;
@@ -234,6 +239,16 @@ public sealed class PlayState(App app) : GameState {
             break;
         }
     }
+    private void HandleBuildMenu() {
+        if (_buildMenu is null && _hoveredTile is { Content: OpenTile open }) {
+            if (IsMouseButtonPressed(MouseButton.Left)) {
+                _buildMenu = new BuildMenu(open, _hoveredEdgeIndex, () => _buildMenu = null);
+            }
+        }
+        else if (_buildMenu is not null && IsKeyPressed(KeyboardKey.Escape)) {
+            _buildMenu = null;
+        }
+    }
     public void Draw() {
         var world = app.World!;
 
@@ -274,6 +289,7 @@ public sealed class PlayState(App app) : GameState {
         //DrawScrapCounter
         _countDownCounter.Draw();
         _scrapCounter.Draw();
+        _buildMenu?.Draw();
         //EndMode2D();
     }
     public void Activate() {
@@ -357,8 +373,12 @@ public sealed class Loot : OpenTileContent {
     public void Draw() => throw new NotImplementedException();
 }
 public sealed class TowerCore : OpenTileContent {
-    public void Progress(Double deltaTime) => throw new NotImplementedException();
-    public void Draw() => throw new NotImplementedException();
+    public void Progress(Double deltaTime) {
+
+    }
+    public void Draw() {
+
+    }
 }
 public sealed class Boiler : OpenTileContent {
     public void Progress(Double deltaTime) => throw new NotImplementedException();
@@ -425,9 +445,39 @@ public sealed class Pathfinder {
 public sealed class SteamNetwork {
     public Vector2 CalculateForeachConnection() => throw new NotImplementedException();
 }
+public enum MemoryTileType {
+    None,
+    Open,
+    Loot,
+    Core
+}
 public sealed class Memory {
-    public Boolean IsKnown(OpenTileContent tile) => throw new NotImplementedException();
-    public Boolean SyncWith(Memory memory) => throw new NotImplementedException();
+    private Dictionary<Vector2, MemoryTileType> _memory = [];
+    public MemoryTileType IsKnown(Vector2 position) {
+        if (_memory.TryGetValue(position, out var type)) {
+            return type;
+        }
+        return MemoryTileType.None;
+    }
+    public void Store(Vector2 position, MemoryTileType type) {
+        if (type == MemoryTileType.None) {
+            _memory.Remove(position);
+        }
+        else {
+            _memory[position] = type;
+        }
+    }
+    public void SyncWith(Memory memory) {
+        if (memory == this) {
+            throw new Exception("Should not compare itself, should never happen");
+        }
+
+        foreach (var (position, type) in memory._memory) {
+            _memory[position] = type;
+        }
+
+        memory._memory = new Dictionary<Vector2, MemoryTileType>(_memory);
+    }
 }
 public interface UIElement {
     void Progress(Double deltaTime);
@@ -492,7 +542,7 @@ public sealed class CountDownCounter(Int32 duration) : UIElement {
 }
 public sealed class ScrapCounter(Func<Int32> scraps) : UIElement {
     public void Progress(double deltaTime) {
-        
+
     }
     public void Draw() {
         var fontSize = 20;
@@ -500,5 +550,76 @@ public sealed class ScrapCounter(Func<Int32> scraps) : UIElement {
         var width = GetScreenWidth() - MeasureText(text, fontSize);
 
         DrawText(text, 10, 10, fontSize, Color.Red);
+    }
+}
+public sealed class BuildMenu : UIElement {
+    private const Single _innerRadius = 50f;
+    private const Single _outerRadius = 130f;
+    private const Int32 _fontSize = 16;
+    private const Single _gapDegrees = 2f;
+     
+    private readonly (String Label, Action Action)[] _options;
+    private readonly Action _close;
+    private readonly Vector2 _centre = GetMousePosition();
+    private Int32 _hovered = -1;
+
+    public BuildMenu(OpenTile tile, EdgeSide edge, Action close) {
+        _close = close;
+        _options = [
+            ("clear edge", () => tile.Edges[(Int32)edge] = null),
+            ("clear tile", () => tile.Content = null),
+            ("pipe", () => tile.Edges[(Int32)edge] = new Pipe()),
+            ("wall", () => tile.Edges[(Int32)edge] = new Wall()),
+            ("boiler", () => tile.Content = new Boiler()),
+            ("steam trap", () => tile.Content = new Steam()),
+            ("crusher", () => tile.Content = new Crusher()),
+            ("saw", () => tile.Content = new Saw()),
+            ("nails", () => tile.Content = new Nails()),
+        ];
+        if (tile.Edges[(Int32)edge] is null) {
+            _options = _options.Where(x=>x.Label != "clear edge").ToArray();
+        }
+        if (tile.Edges[(Int32)edge] is null) {
+            _options = _options.Where(x=>x.Label != "clear tile").ToArray();
+        }
+    }
+
+    private Single SectorSize => 360f / _options.Length;
+    private Single SectorStart(Int32 index) => -90f - SectorSize / 2 + index * SectorSize;
+
+    public void Progress(double deltaTime) {
+        var offset = GetMousePosition() - _centre;
+        var distance = offset.Length();
+        _hovered = -1;
+        if (distance >= _innerRadius && distance <= _outerRadius) {
+            var degrees = MathF.Atan2(offset.Y, offset.X) * 180f / MathF.PI + 90f + SectorSize / 2;
+            degrees = (degrees % 360f + 360f) % 360f;
+            _hovered = (Int32)(degrees / SectorSize) % _options.Length;
+        }
+
+        if (IsMouseButtonPressed(MouseButton.Left)) {
+            if (_hovered >= 0) {
+                _options[_hovered].Action();
+                _close();
+            }
+            else if (distance > _outerRadius) {
+                _close();
+            }
+        }
+    }
+
+    public void Draw() {
+        for (var i = 0; i < _options.Length; i++) {
+            var start = SectorStart(i) + _gapDegrees / 2;
+            var end = start + SectorSize - _gapDegrees;
+            var colour = i == _hovered ? Color.Orange : Color.DarkBrown;
+            DrawRing(_centre, _innerRadius, _outerRadius, start, end, 24, Fade(colour, 0.9f));
+
+            var mid = (start + end) / 2f * MathF.PI / 180f;
+            var labelRadius = (_innerRadius + _outerRadius) / 2f;
+            var labelPosition = _centre + new Vector2(MathF.Cos(mid), MathF.Sin(mid)) * labelRadius;
+            var label = _options[i].Label;
+            DrawText(label, (Int32)labelPosition.X - MeasureText(label, _fontSize) / 2, (Int32)labelPosition.Y - _fontSize / 2, _fontSize, Color.White);
+        }
     }
 }
