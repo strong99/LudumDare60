@@ -27,7 +27,7 @@ public sealed class BuildMenu : UIElement {
             ("boiler", () => tile.Content = new Boiler()),
             ("steam trap", () => tile.Content = new Steam()),
             ("crusher", () => tile.Content = new Crusher()),
-            ("saw", () => tile.Content = new Saw()),
+            ("saw", () => tile.Content = new Saw(resources, world, worldTile)),
             ("nails", () => tile.Content = new Nails()),
         ];
         if (tile.Edges[(Int32)edge] is null) {

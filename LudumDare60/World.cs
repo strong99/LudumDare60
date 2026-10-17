@@ -8,13 +8,13 @@ public sealed class World {
     public Double Duration { get; }
     public Memory EnemyKnowledge { get; } = new();
 
-    public World(Int32 size) {
+    public World(Int32 size, ResourceManager resourceManager) {
         Size = size;
         Tiles = new Tile[size, size];
         for (var x = 0; x < size; x++) {
             for (var y = 0; y < size; y++) {
                 var border = x == 0 || y == 0 || x == size - 1 || y == size - 1;
-                Tiles[x, y] = new Tile(x, y, border ? new SolidTile() : new OpenTile());
+                Tiles[x, y] = new Tile(x, y, border ? new SolidTile() : new OpenTile(resourceManager));
             }
         }
     }

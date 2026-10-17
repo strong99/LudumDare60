@@ -9,6 +9,9 @@ public readonly record struct TextureHandle(String Key, Texture2D Texture) {
 public readonly record struct ModelHandle(String Key, Model Model) {
     public static implicit operator Model(ModelHandle h) => h.Model;
 }
+public readonly record struct ModelAnimationHandle(String Key, ModelAnimation[] Animations) {
+    public static implicit operator ModelAnimation[](ModelAnimationHandle h) => h.Animations;
+}
 
 public sealed class ResourceManager {
     class ReferenceCount<TResource>(TResource resource, Int32 count) {
@@ -84,6 +87,31 @@ public sealed class ResourceManager {
         if (reference.Count == 0) {
             UnloadModel(reference.Resource);
             _modelReferences.Remove(model.Key);
+        }
+    }
+
+    private readonly Dictionary<String, ReferenceCount<ModelAnimation[]>> _animationReferences = [];
+    public ModelAnimationHandle GetOrLoadAnimations(String fileName) {
+        var fullFileName = Path.GetFullPath(fileName);
+        if (_animationReferences.TryGetValue(fullFileName, out var reference)) {
+            return new(fullFileName, reference.Resource);
+        }
+
+        var animations = LoadModelAnimations(fullFileName).ToArray();
+        _animationReferences.Add(fullFileName, new(animations, 1));
+
+        return new(fullFileName, animations);
+    }
+    public void ReleaseAnimations(ModelAnimationHandle model) {
+        if (!_animationReferences.TryGetValue(model.Key, out var reference)) {
+            throw new Exception("Does not exist");
+        }
+
+        reference.Release();
+
+        if (reference.Count == 0) {
+            UnloadModelAnimations(reference.Resource);
+            _animationReferences.Remove(model.Key);
         }
     }
 }

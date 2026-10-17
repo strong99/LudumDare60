@@ -69,6 +69,6 @@ public sealed class App : IDisposable {
     }
 
     public void CreateNewWorld() {
-        World = new(16);
+        World = new(16, Resources);
     }
 }
