@@ -2,6 +2,8 @@
 using System.Numerics;
 using static Raylib_cs.Raylib;
 
+namespace LudumDare60.Enemies;
+
 public sealed class Enemy {
     public void Progress(Double deltaTime) => throw new NotImplementedException();
     public void Draw() {

@@ -1,4 +1,6 @@
-﻿public enum EdgeSide {
+﻿namespace LudumDare60.Tiles;
+
+public enum EdgeSide {
     North, // -Z
     East,  // +X
     South, // +Z

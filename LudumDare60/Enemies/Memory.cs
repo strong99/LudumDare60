@@ -1,5 +1,7 @@
 ﻿using System.Numerics;
 
+namespace LudumDare60.Enemies;
+
 public sealed class Memory {
     private Dictionary<Vector2, MemoryTileType> _memory = [];
     public MemoryTileType IsKnown(Vector2 position) {

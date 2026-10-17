@@ -2,6 +2,8 @@
 using System.Numerics;
 using static Raylib_cs.Raylib;
 
+namespace LudumDare60.Tiles;
+
 public sealed class OpenTile : TileContent {
     public OpenTileContent? Content { get; set; }
     public Edge[] Edges { get; } = new Edge[4];

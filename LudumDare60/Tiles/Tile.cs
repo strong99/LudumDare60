@@ -1,5 +1,7 @@
 ﻿using System.Numerics;
 
+namespace LudumDare60.Tiles;
+
 public sealed class Tile(Int32 x, Int32 y, TileContent content) {
     public Int32 X { get; } = x;
     public Int32 Y { get; } = y;

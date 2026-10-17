@@ -1,4 +1,6 @@
-﻿public sealed class TowerCore : OpenTileContent {
+﻿namespace LudumDare60.Tiles;
+
+public sealed class TowerCore : OpenTileContent {
     public void Progress(Double deltaTime) {
 
     }

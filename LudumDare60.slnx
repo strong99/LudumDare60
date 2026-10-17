@@ -1,4 +1,6 @@
 <Solution>
-  <Project Path="Docs/Docs.csproj" Id="b0fec17c-8f5f-47be-99d4-3513b2c238d3" />
+  <Project Path="Docs/Docs.csproj" Id="b0fec17c-8f5f-47be-99d4-3513b2c238d3">
+    <Build Project="false" />
+  </Project>
   <Project Path="LudumDare60/LudumDare60.csproj" />
 </Solution>

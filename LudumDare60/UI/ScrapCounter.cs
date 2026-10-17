@@ -1,6 +1,8 @@
 ﻿using Raylib_cs;
 using static Raylib_cs.Raylib;
 
+namespace LudumDare60.UI;
+
 public sealed class ScrapCounter(Func<Int32> scraps) : UIElement {
     public void Progress(double deltaTime) {
 

@@ -13,6 +13,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Using Include="LudumDare60" />
+    <Using Include="LudumDare60.Behaviours" />
+    <Using Include="LudumDare60.Enemies" />
+    <Using Include="LudumDare60.GameStates" />
+    <Using Include="LudumDare60.Tiles" />
+    <Using Include="LudumDare60.UI" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="Assets\Pipe.glb">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

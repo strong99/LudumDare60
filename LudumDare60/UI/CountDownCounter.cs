@@ -1,6 +1,8 @@
 ﻿using Raylib_cs;
 using static Raylib_cs.Raylib;
 
+namespace LudumDare60.UI;
+
 public sealed class CountDownCounter(Int32 duration) : UIElement {
     public Int32 Duration { get; set; } = duration;
     private Double _duration;

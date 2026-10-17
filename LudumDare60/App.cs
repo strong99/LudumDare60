@@ -1,6 +1,8 @@
 using LudumDare60;
 ﻿using static Raylib_cs.Raylib;
 
+namespace LudumDare60;
+
 public sealed class App : IDisposable {
     private Boolean _active = false;
     private GameState? _nextGameState;

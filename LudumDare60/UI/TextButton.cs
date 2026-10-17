@@ -2,6 +2,8 @@
 using System.Numerics;
 using static Raylib_cs.Raylib;
 
+namespace LudumDare60.UI;
+
 public sealed class TextButton(String text, Vector2 position, Action<TextButton> action) : UIElement {
     public Int32 FontSize {
         get;

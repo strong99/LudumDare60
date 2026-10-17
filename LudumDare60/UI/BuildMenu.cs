@@ -4,6 +4,8 @@ using LudumDare60;
 using System.Numerics;
 using static Raylib_cs.Raylib;
 
+namespace LudumDare60.UI;
+
 public sealed class BuildMenu : UIElement {
     private const Single _innerRadius = 50f;
     private const Single _outerRadius = 130f;

@@ -2,6 +2,8 @@
 using System.Numerics;
 using static Raylib_cs.Raylib;
 
+namespace LudumDare60.Tiles;
+
 public sealed class SolidTile : TileContent {
     public void Progress(Double deltaTime) { }
     public void Draw(Vector3 origin) {

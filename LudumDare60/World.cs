@@ -1,4 +1,6 @@
-﻿public sealed class World {
+﻿namespace LudumDare60;
+
+public sealed class World {
     public Int32 Size { get; }
     public Tile[,] Tiles { get; }
     public Enemy[] Enemies { get; } = [];

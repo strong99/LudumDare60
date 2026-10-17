@@ -2,6 +2,8 @@
 using System.Numerics;
 using static Raylib_cs.Raylib;
 
+namespace LudumDare60.GameStates;
+
 public sealed class PlayState(App app) : GameState {
     private Camera3D _camera;
     private CountDownCounter _countDownCounter;

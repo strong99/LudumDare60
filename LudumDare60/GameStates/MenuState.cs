@@ -1,5 +1,7 @@
 ﻿using static Raylib_cs.Raylib;
 
+namespace LudumDare60.GameStates;
+
 public sealed class MenuState(App app) : GameState {
     private TextButton _newGame;
     private TextButton? _continueGame;
