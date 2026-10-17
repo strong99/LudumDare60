@@ -70,16 +70,27 @@ public sealed class App : IDisposable {
     }
 
     public void CreateNewWorld() {
-        World = new();
+        World = new(16);
     }
 }
 public sealed class World {
-    public Camera3D Camera3D;
+    public Int32 Size { get; }
     public Tile[,] Tiles { get; }
-    public Enemy[] Enemies { get; }
+    public Enemy[] Enemies { get; } = [];
     public Int32 Scraps { get; }
     public Double Duration { get; }
-    public Memory EnemyKnowledge { get; }
+    public Memory EnemyKnowledge { get; } = new();
+
+    public World(Int32 size) {
+        Size = size;
+        Tiles = new Tile[size, size];
+        for (var x = 0; x < size; x++) {
+            for (var y = 0; y < size; y++) {
+                var border = x == 0 || y == 0 || x == size - 1 || y == size - 1;
+                Tiles[x, y] = new Tile(x, y, border ? new SolidTile() : new OpenTile());
+            }
+        }
+    }
 }
 public interface GameState {
     void Progress(Double deltaTime);
@@ -129,10 +140,94 @@ public sealed class MenuState(App app) : GameState {
     }
 }
 public sealed class PlayState(App app) : GameState {
-    public void Progress(Double deltaTime) => throw new NotImplementedException();
-    public void Draw() => throw new NotImplementedException();
-    public void Activate() => throw new NotImplementedException();
-    public void Deactivate() => throw new NotImplementedException();
+    private Camera3D _camera;
+    private CountDownCounter _countDownCounter;
+    private ScrapCounter _scrapCounter;
+    public void Progress(Double deltaTime) {
+        var world = app.World!;
+
+        HandleScroll();
+
+        foreach (var tile in world.Tiles) {
+            tile.Progress(deltaTime);
+        }
+        foreach (var enemy in world.Enemies) {
+            enemy.Progress(deltaTime);
+        }
+        _countDownCounter.Progress(deltaTime);
+        _scrapCounter.Progress(deltaTime);
+    }
+    private void HandleScroll() {
+        const Single speed = 10f;
+        const Single edgeSize = 20f;
+
+        var mouseCoords = GetMousePosition();
+        var direction = Vector2.Zero;
+
+        if (IsKeyDown(KeyboardKey.Left) || mouseCoords.X < edgeSize) {
+            direction.X -= 1;
+        }
+        if (IsKeyDown(KeyboardKey.Right) || mouseCoords.X > GetScreenWidth() - edgeSize) {
+            direction.X += 1;
+        }
+        if (IsKeyDown(KeyboardKey.Up) || mouseCoords.Y < edgeSize) {
+            direction.Y -= 1;
+        }
+        if (IsKeyDown(KeyboardKey.Down) || mouseCoords.Y > GetScreenHeight() - edgeSize) {
+            direction.Y += 1;
+        }
+
+        if (direction == Vector2.Zero) {
+            return;
+        }
+
+        var offset = Vector2.Normalize(direction) * speed * GetFrameTime();
+        var size = app.World!.Size;
+        var target = _camera.Target;
+        var newX = Math.Clamp(target.X + offset.X, 0, size);
+        var newZ = Math.Clamp(target.Z + offset.Y, 0, size);
+        var move = new Vector3(newX - target.X, 0, newZ - target.Z);
+
+        _camera.Position += move;
+        _camera.Target += move;
+    }
+    public void Draw() {
+        var world = app.World!;
+
+        BeginMode3D(_camera);
+
+        foreach (var tile in world.Tiles) {
+            tile.Draw();
+        }
+        foreach (var enemy in world.Enemies) {
+            enemy.Draw();
+        }
+
+        EndMode3D();
+
+        //BeginMode2D();
+        //DrawBuildMenu
+        //DrawScrapCounter
+        _countDownCounter.Draw();
+        _scrapCounter.Draw();
+        //EndMode2D();
+    }
+    public void Activate() {
+        var world = app.World!;
+        var centre = world.Size / 2f;
+        _camera = new Camera3D {
+            Position = new Vector3(centre, 12, world.Size + 2),
+            Target = new Vector3(centre, 0, centre),
+            Up = Vector3.UnitY,
+            FovY = 45,
+            Projection = CameraProjection.Perspective,
+        };
+        _countDownCounter = new(3600);
+        _scrapCounter = new(() => app.World.Scraps);
+    }
+    public void Deactivate() {
+
+    }
 }
 public sealed class GameOverState : GameState {
     public void Progress(Double deltaTime) => throw new NotImplementedException();
@@ -140,24 +235,36 @@ public sealed class GameOverState : GameState {
     public void Activate() => throw new NotImplementedException();
     public void Deactivate() => throw new NotImplementedException();
 }
-public sealed class Tile {
-    public TileContent Content { get; }
-    public void Progress(Double deltaTime) => throw new NotImplementedException();
-    public void Draw() => throw new NotImplementedException();
+public sealed class Tile(Int32 x, Int32 y, TileContent content) {
+    public Int32 X { get; } = x;
+    public Int32 Y { get; } = y;
+    public TileContent Content { get; } = content;
+    public void Progress(Double deltaTime) => Content.Progress(deltaTime);
+    public void Draw() => Content.Draw(new Vector3(X, 0, Y));
 }
 public interface TileContent {
     void Progress(Double deltaTime);
-    void Draw();
+    void Draw(Vector3 origin);
 }
 public sealed class SolidTile : TileContent {
-    public void Progress(Double deltaTime) => throw new NotImplementedException();
-    public void Draw() => throw new NotImplementedException();
+    public void Progress(Double deltaTime) { }
+    public void Draw(Vector3 origin) {
+        var centre = origin + new Vector3(0.5f, 0.5f, 0.5f);
+        DrawCube(centre, 1, 1, 1, Color.Gray);
+        DrawCubeWires(centre, 1, 1, 1, Color.DarkGray);
+    }
 }
 public sealed class OpenTile : TileContent {
-    public OpenTileContent Content { get; set; }
+    public OpenTileContent? Content { get; set; }
     public Edge[] Edges { get; } = new Edge[4];
-    public void Progress(Double deltaTime) => throw new NotImplementedException();
-    public void Draw() => throw new NotImplementedException();
+    public void Progress(Double deltaTime) => Content?.Progress(deltaTime);
+    public void Draw(Vector3 origin) {
+        var centre = origin + new Vector3(0.5f, -0.05f, 0.5f);
+        DrawCube(centre, 1, 0.1f, 1, Color.Beige);
+        DrawCubeWires(centre, 1, 0.1f, 1, Color.Brown);
+
+        Content?.Draw();
+    }
 }
 public interface Edge {
     void Progress(Double deltaTime) => throw new NotImplementedException();
@@ -214,7 +321,14 @@ public sealed class WaveSpawner {
 }
 public sealed class Enemy {
     public void Progress(Double deltaTime) => throw new NotImplementedException();
-    public void Draw() => throw new NotImplementedException();
+    public void Draw() {
+        var centre = new Vector3(Position.X, 0.3f, Position.Y);
+        DrawCube(centre, 0.4f, 0.6f, 0.4f, Color.Green);
+        DrawCubeWires(centre, 0.4f, 0.6f, 0.4f, Color.DarkGreen);
+
+        var facing = new Vector3(MathF.Sin(FacingRotation), 0, MathF.Cos(FacingRotation));
+        DrawLine3D(centre, centre + facing * 0.4f, Color.Red);
+    }
     public EnemyKind Kind { get; }
     public EnemyBehaviour Behaviour { get; }
     public Memory Memory { get; }
@@ -287,5 +401,32 @@ public sealed class TextButton(String text, Vector2 position, Action<TextButton>
     }
     public void Draw() {
         DrawText(text, (Int32)position.X - _size / 2, (Int32)position.Y - FontSize / 2, FontSize, _hover ? Color.Blue : Color.Red);
+    }
+}
+public sealed class CountDownCounter(Int32 duration) : UIElement {
+    public Int32 Duration { get; set; } = duration;
+    private Double _duration;
+    public void Progress(double deltaTime) {
+        _duration += deltaTime;
+    }
+    public void Draw() {
+        var fontSize = 20;
+        var timeLeft = Math.Max(Duration - _duration, 0);
+        var text = $"{(Int32)timeLeft}s";
+        var width = GetScreenWidth() - MeasureText(text, fontSize);
+
+        DrawText(text, width / 2, 10, fontSize, Color.Red);
+    }
+}
+public sealed class ScrapCounter(Func<Int32> scraps) : UIElement {
+    public void Progress(double deltaTime) {
+        
+    }
+    public void Draw() {
+        var fontSize = 20;
+        var text = $"{scraps()} scraps";
+        var width = GetScreenWidth() - MeasureText(text, fontSize);
+
+        DrawText(text, 10, 10, fontSize, Color.Red);
     }
 }
