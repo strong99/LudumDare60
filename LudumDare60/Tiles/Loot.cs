@@ -1,0 +1,4 @@
+﻿public sealed class Loot : OpenTileContent {
+    public void Progress(Double deltaTime) => throw new NotImplementedException();
+    public void Draw() => throw new NotImplementedException();
+}
