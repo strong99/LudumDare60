@@ -1,5 +1,4 @@
-﻿using LudumDare60.Behaviours;
-using LudumDare60.Enemies;
+﻿using LudumDare60.Enemies;
 using System.Drawing;
 using System.Numerics;
 
@@ -59,13 +58,14 @@ public sealed class WaveSpawner(World world) {
     }
 
     private Boolean TrySpawnAt(Tile entrance) {
-        world.Enemies.Add(new Enemy {
+        var enemy = new Enemy {
             Kind = _goblinExplorer,
             HitPoints = _goblinExplorer.MaxHitPoints,
-            Memory = new Memory(),
-            Behaviour = new ExploreBehaviour(),
+            Memory = world.EnemyKnowledge.Clone(),
             Position = new Vector2(entrance.X + 0.5f, entrance.Y + 0.5f),
-        });
+        };
+        enemy.Behaviour = new ExploreBehaviour(world, enemy);
+        world.Enemies.Add(enemy);
         return true;
     }
 

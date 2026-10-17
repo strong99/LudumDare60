@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <Using Include="LudumDare60" />
-    <Using Include="LudumDare60.Behaviours" />
     <Using Include="LudumDare60.Enemies" />
     <Using Include="LudumDare60.GameStates" />
     <Using Include="LudumDare60.Tiles" />
@@ -23,6 +22,9 @@
 
   <ItemGroup>
     <None Update="Assets\Boiler.glb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Core.glb">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Assets\Crusher.glb">

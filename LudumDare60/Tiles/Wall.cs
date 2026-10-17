@@ -4,7 +4,9 @@ using static Raylib_cs.Raylib;
 
 namespace LudumDare60.Tiles;
 
-public sealed class Wall : Edge {
+public sealed class Wall : Edge, Damageable {
+    public Single HitPoints { get; set; } = 20f;
+    public Int32 MaxHitPoints { get; set; } = 20;
     private const Single _scale = 1.0f;
     private readonly ModelHandle _model;
     public Wall(ResourceManager manager) {

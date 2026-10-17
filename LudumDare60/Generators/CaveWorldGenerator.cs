@@ -45,7 +45,7 @@ public sealed class CaveWorldGenerator {
                     CaveTileType.Solid => new SolidTile(),
                     CaveTileType.Open => new OpenTile(resourceManager),
                     CaveTileType.Entrance => new OpenTile(resourceManager) { Content = new TowerEntrance(resourceManager) },
-                    CaveTileType.Core => new OpenTile(resourceManager) { Content = new TowerCore() },
+                    CaveTileType.Core => new OpenTile(resourceManager) { Content = new TowerCore(resourceManager) },
                     _ => throw new ArgumentOutOfRangeException(nameof(caveTiles))
                 };
                 tiles[x, y] = new Tile(x, y, content);

@@ -1,5 +1,6 @@
 using LudumDare60;
 using LudumDare60.Generators;
+using Raylib_cs;
 using static Raylib_cs.Raylib;
 
 namespace LudumDare60;
@@ -22,6 +23,7 @@ public sealed class App : IDisposable {
 
         InitWindow(screenWidth, screenHeight, title);
         SetTargetFPS(targetFPS);
+        SetExitKey(KeyboardKey.Null);
 
         GameState?.Activate();
 

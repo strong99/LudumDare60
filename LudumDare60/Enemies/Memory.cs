@@ -18,6 +18,14 @@ public sealed class Memory {
             _memory[position] = type;
         }
     }
+    public Vector2? RetrieveOne(MemoryTileType type) {
+        foreach (var (position, t) in _memory) {
+            if (t == type) {
+                return position;
+            }
+        }
+        return null;
+    }
     public void SyncWith(Memory memory) {
         if (memory == this) {
             throw new Exception("Should not compare itself, should never happen");
@@ -28,5 +36,12 @@ public sealed class Memory {
         }
 
         memory._memory = new Dictionary<Vector2, MemoryTileType>(_memory);
+    }
+
+    public Memory Clone() {
+        var memory = new Memory {
+            _memory = new(_memory)
+        };
+        return memory;
     }
 }

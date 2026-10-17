@@ -8,11 +8,13 @@ public sealed class PlayState(App app) : GameState {
     private Camera3D _camera;
     private CountDownCounter _countDownCounter;
     private ScrapCounter _scrapCounter;
+    private TowerCoreCounter _towerCoreCounter;
     private WaveSpawner _waveSpawner = null!;
     private BuildMenu? _buildMenu;
     private Tile? _hoveredTile = null;
     private Edge? _hoveredEdge = null;
     private EdgeSide _hoveredEdgeIndex = EdgeSide.North;
+    private TowerCore _towerCore;
     public void Progress(Double deltaTime) {
         var world = app.World!;
 
@@ -26,12 +28,17 @@ public sealed class PlayState(App app) : GameState {
             tile.Progress(deltaTime);
         }
         _waveSpawner.Progress(deltaTime);
-        foreach (var enemy in world.Enemies) {
+        foreach (var enemy in world.Enemies.ToList()) {
             enemy.Progress(deltaTime);
         }
         _countDownCounter.Progress(deltaTime);
         _scrapCounter.Progress(deltaTime);
         _buildMenu?.Progress(deltaTime);
+        _towerCoreCounter.Progress(deltaTime);
+
+        if (_towerCore.HitPoints <= 0 ) {
+            app.SetNextGameState(new GameOverState(app, false));
+        }
     }
     private void HandleScroll() {
         const Single speed = 10f;
@@ -161,6 +168,7 @@ public sealed class PlayState(App app) : GameState {
         _countDownCounter.Draw();
         _scrapCounter.Draw();
         _buildMenu?.Draw();
+        _towerCoreCounter.Draw();
         //EndMode2D();
     }
     public void Activate() {
@@ -176,6 +184,12 @@ public sealed class PlayState(App app) : GameState {
         _waveSpawner = new WaveSpawner(world);
         _countDownCounter = new(3600);
         _scrapCounter = new(() => app.World.Scraps);
+
+        _towerCore = world.Tiles
+            .Cast<Tile>()
+            .Select(t => (t.Content as OpenTile)?.Content as TowerCore)
+            .FirstOrDefault(c => c is not null);
+        _towerCoreCounter = new(() => (Int32)MathF.Ceiling(_towerCore?.HitPoints ?? 0));
     }
     public void Deactivate() {
 
