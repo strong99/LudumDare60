@@ -11,6 +11,8 @@ public sealed class PlayState(App app) : GameState {
     private CountDownCounter _countDownCounter;
     private ScrapCounter _scrapCounter;
     private TowerCoreCounter _towerCoreCounter;
+    private IconButton _menuButton;
+    private IconButton _helpButton;
     private WaveSpawner _waveSpawner = null!;
     private BuildMenu? _buildMenu;
     private Tile? _hoveredTile = null;
@@ -55,6 +57,8 @@ public sealed class PlayState(App app) : GameState {
         _buildMenu?.Progress(deltaTime);
         _displayHintLabel?.Progress(deltaTime);
         _towerCoreCounter.Progress(deltaTime);
+        _menuButton.Progress(deltaTime);
+        _helpButton.Progress(deltaTime);
 
         if (_countDownCounter.TimeUp) {
             app.SetNextGameState(new GameOverState(app, true));
@@ -263,6 +267,8 @@ public sealed class PlayState(App app) : GameState {
             _displayHintLabel?.Draw();
         }
         _towerCoreCounter.Draw();
+        _menuButton.Draw();
+        _helpButton.Draw();
         //EndMode2D();
     }
 
@@ -316,6 +322,10 @@ public sealed class PlayState(App app) : GameState {
         _countDownCounter = new(3600, labelBackgroundTexture(), app.Resources.GetOrLoadTexture("Assets/IconClock.png"));
         _scrapCounter = new(() => app.World.Scraps, labelBackgroundTexture(), app.Resources.GetOrLoadTexture("Assets/IconScraps.png"));
 
+        var screenWidth = GetScreenWidth();
+        _menuButton = new(new(screenWidth - 37, 21), app.Resources.GetOrLoadTexture("Assets/IconButton.png"), app.Resources.GetOrLoadTexture("Assets/IconMenu.png"), _ => app.SetNextGameState(new MenuState(app)));
+        _helpButton = new(new(screenWidth - 37, 58), app.Resources.GetOrLoadTexture("Assets/IconButton.png"), app.Resources.GetOrLoadTexture("Assets/IconHelp.png"), _ => _displayHint = !_displayHint);
+
         _cityScape = app.Resources.GetOrLoadModel("Assets/CityScape.glb");
 
         _towerCoreRef = world.Tiles
@@ -324,7 +334,7 @@ public sealed class PlayState(App app) : GameState {
             .FirstOrDefault(c => c is not null);
         _towerCoreCounter = new(() => (Int32)MathF.Ceiling(_towerCoreRef?.HitPoints ?? 0), labelBackgroundTexture(), app.Resources.GetOrLoadTexture("Assets/IconDamage.png"));
 
-        var cx = GetScreenWidth() / 2;
+        var cx = screenWidth / 2;
         var cy = GetScreenHeight();
         _displayHintLabel = new Label("Defend the Tower Core\nMind your Steam volume\nClick a tile to get started.", new(cx - 50, cy - 133), app.Resources.GetOrLoadTexture("Assets/Hint.png"));
 
@@ -339,6 +349,11 @@ public sealed class PlayState(App app) : GameState {
         app.Resources.ReleaseTexture(_scrapCounter.Icon);
         app.Resources.ReleaseTexture(_towerCoreCounter.Texture);
         app.Resources.ReleaseTexture(_towerCoreCounter.Icon);
+
+        app.Resources.ReleaseTexture(_menuButton.Back);
+        app.Resources.ReleaseTexture(_menuButton.Icon);
+        app.Resources.ReleaseTexture(_helpButton.Back);
+        app.Resources.ReleaseTexture(_helpButton.Icon);
 
         app.Resources.ReleaseModel(_cityScape);
 
