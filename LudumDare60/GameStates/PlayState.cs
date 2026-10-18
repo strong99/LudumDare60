@@ -19,8 +19,10 @@ public sealed class PlayState(App app) : GameState {
     private Edge? _hoveredEdge = null;
     private EdgeSide _hoveredEdgeIndex = EdgeSide.North;
     private TowerCore _towerCoreRef;
+    private Tile? _towerCoreTile;
     private Boolean _showSteamDebug = true;
     private ModelHandle _cityScape;
+    private TextureHandle _warningIcon;
     private Boolean _displayHint = true;
     private Label _displayHintLabel;
     private MusicGenerator<DramaticPlayMusicGeneratorStrategy>? _music;
@@ -31,6 +33,10 @@ public sealed class PlayState(App app) : GameState {
 
         if (IsKeyPressed(KeyboardKey.F3)) {
             _showSteamDebug = !_showSteamDebug;
+        }
+
+        if (_buildMenu is null && IsKeyPressed(KeyboardKey.Escape)) {
+            app.SetNextGameState(new MenuState(app));
         }
 
         HandleRotation();
@@ -67,9 +73,6 @@ public sealed class PlayState(App app) : GameState {
             app.SetNextGameState(new GameOverState(app, false));
         }
 
-        if (_buildMenu is null && IsKeyPressed(KeyboardKey.Escape)) {
-            app.SetNextGameState(new MenuState(app));
-        }
     }
     private void HandleRotation() {
         const Single rotationSpeed = 1.5f;
@@ -253,6 +256,18 @@ public sealed class PlayState(App app) : GameState {
         EndMode3D();
         _ssao.End();
 
+        if (_towerCoreRef is { AlarmActive: true } && _towerCoreTile is { } coreTile) {
+            var screen = GetWorldToScreen(new Vector3(coreTile.X + 0.5f, 1.8f, coreTile.Y + 0.5f), _camera);
+            var scale = 1f + 0.25f * MathF.Sin((Single)GetTime() * 8f);
+            var width = _warningIcon.Texture.Width * scale;
+            var height = _warningIcon.Texture.Height * scale;
+            DrawTexturePro(_warningIcon,
+                new Rectangle(0, 0, _warningIcon.Texture.Width, _warningIcon.Texture.Height),
+                new Rectangle(screen.X - width / 2, screen.Y - height / 2, width, height),
+                Vector2.Zero, 0, Color.Red
+            );
+        }
+
         if (_showSteamDebug) {
             DrawSteamDebug(world);
         }
@@ -327,11 +342,12 @@ public sealed class PlayState(App app) : GameState {
         _helpButton = new(new(screenWidth - 37, 58), app.Resources.GetOrLoadTexture("Assets/IconButton.png"), app.Resources.GetOrLoadTexture("Assets/IconHelp.png"), _ => _displayHint = !_displayHint);
 
         _cityScape = app.Resources.GetOrLoadModel("Assets/CityScape.glb");
+        _warningIcon = app.Resources.GetOrLoadTexture("Assets/IconWarning.png");
 
-        _towerCoreRef = world.Tiles
+        _towerCoreTile = world.Tiles
             .Cast<Tile>()
-            .Select(t => (t.Content as OpenTile)?.Content as TowerCore)
-            .FirstOrDefault(c => c is not null);
+            .FirstOrDefault(t => (t.Content as OpenTile)?.Content is TowerCore);
+        _towerCoreRef = (_towerCoreTile?.Content as OpenTile)?.Content as TowerCore;
         _towerCoreCounter = new(() => (Int32)MathF.Ceiling(_towerCoreRef?.HitPoints ?? 0), labelBackgroundTexture(), app.Resources.GetOrLoadTexture("Assets/IconDamage.png"));
 
         var cx = screenWidth / 2;
@@ -356,6 +372,7 @@ public sealed class PlayState(App app) : GameState {
         app.Resources.ReleaseTexture(_helpButton.Icon);
 
         app.Resources.ReleaseModel(_cityScape);
+        app.Resources.ReleaseTexture(_warningIcon);
 
         _ssao.Dispose();
         _music?.Dispose();

@@ -138,7 +138,17 @@ public sealed class AttackBehaviour(World world, Enemy enemy, Point home) : Enem
             return;
         }
 
-        Face(new Vector2(core.X + 0.5f, core.Y + 0.5f));
+        var coreCenter = new Vector2(core.X + 0.5f, core.Y + 0.5f);
+        Face(coreCenter);
+
+        var gap = coreCenter - enemy.Position;
+        var reach = MathF.Max(MathF.Abs(gap.X), MathF.Abs(gap.Y)) - 0.5f;
+        if (reach > _arriveDistance) {
+            var step = MathF.Min(enemy.Kind.Speed * (Single)deltaTime, reach);
+            enemy.Position += gap / gap.Length() * step;
+            return;
+        }
+
         enemy.Attack();
         target.HitPoints = MathF.Max(0, target.HitPoints - _damagePerSecond * (Single)deltaTime);
     }

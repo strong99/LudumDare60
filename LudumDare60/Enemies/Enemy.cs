@@ -22,7 +22,6 @@ public sealed class Enemy {
 
         DeathTime = IsAlive ? -1 : Math.Max(0, DeathTime) + (Single)deltaTime;
     }
-    /// <summary>Called by behaviours every frame the enemy is swinging its weapon.</summary>
     public void Attack() => _attackedThisFrame = true;
     public void Draw() =>
         GoblinModel.Draw(new Vector3(Position.X, 0, Position.Y), FacingRotation, Weapon, WalkPhase, IsWalking, AttackTime, DeathTime);
