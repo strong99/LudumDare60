@@ -6,11 +6,11 @@ namespace LudumDare60.Tiles;
 public sealed class Spikes : Trap {
     private const Single _raiseSpeed = 1.0f;
     private const Single _maxHeight = 0.3f;
-    private const Single _triggerDistance = 1f;
+    private const Single _triggerDistance = 0.9f;
     private const Int32 _damage = 3;
-    private const Single _steamCost = 0.5f;
+    private const Single _steamCost = 1.5f;
     public const Single SteamCost = _steamCost;
-    private const Double _hitInterval = 0.5;
+    private const Double _hitInterval = 0.75;
     private const Int32 _spikesMesh = 1;
 
     private readonly ModelHandle _model;

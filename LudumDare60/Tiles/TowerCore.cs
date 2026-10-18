@@ -39,6 +39,7 @@ public sealed class TowerCore : MultiTileContent, Damageable {
     }
     public void Progress(Double deltaTime) {
         if (_damageAlarm && !IsSoundPlaying(_alarmSound)) {
+            _damageAlarm = false;
             PlaySound(_alarmSound);
         }
     }

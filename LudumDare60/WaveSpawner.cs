@@ -1,6 +1,4 @@
-﻿using LudumDare60.Enemies;
-using System.Drawing;
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace LudumDare60;
 
@@ -11,9 +9,9 @@ public sealed class WaveSpawner(World world) {
     private const Int32 _baseWaveSize = 3;
     private const Int32 _waveGrowth = 2;
 
-    private static readonly EnemyKind _goblinExplorer = new("Explorer", 10, 1.5f, 0f, 0f);
-    private static readonly EnemyKind _goblinEngineer = new("Engineer", 5, 1.25f, 1f, 0.8f);
-    private static readonly EnemyKind _goblinFigher = new("Fighter", 20, 1f, 0.2f, 0.2f);
+    private static readonly EnemyKind _goblinExplorer = new("Explorer", 10, 1.25f, 0f, 0f);
+    private static readonly EnemyKind _goblinEngineer = new("Engineer", 5, 1f, 1f, 0.8f);
+    private static readonly EnemyKind _goblinFigher = new("Fighter", 20, 0.75f, 0.2f, 0.2f);
     private readonly Random _random = new();
 
     private Double _waveTimer = _firstWaveDelay;

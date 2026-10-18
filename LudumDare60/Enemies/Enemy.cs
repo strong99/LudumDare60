@@ -13,12 +13,26 @@ public sealed class Enemy {
     public required EnemyKind Kind { get; init; }
     public EnemyBehaviour? Behaviour { get; set; }
     public required Memory Memory { get; init; }
-    public Int32 HitPoints { get; set => field = Math.Max(0, value); }
+    private Double _tookDamageCooldown = 0;
+    public Int32 HitPoints { 
+        get; 
+        set {
+            if (value < field) {
+                _tookDamageCooldown = 0.2;
+            }
+            field = Math.Max(0, value);
+        }
+    }
     public Boolean IsAlive { get => HitPoints > 0; }
     public Vector2 Position { get; set; }
     public Single FacingRotation { get; set; }
 
     public void Progress(Double deltaTime) {
+        if (_tookDamageCooldown > 0) {
+            _tookDamageCooldown -= deltaTime;
+            return;
+        }
+
         var before = Position;
         Behaviour?.Progress(deltaTime);
 

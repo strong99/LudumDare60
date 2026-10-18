@@ -2,11 +2,6 @@ using LudumDare60.Tiles;
 
 namespace LudumDare60;
 
-/// <summary>
-/// Works out which steam nodes are neighbours. Pipes connect to pipes sharing a corner of the tile grid,
-/// machinery connects to the pipes on its tile edges and to machinery on neighbouring tiles. Run when the
-/// layout changes; the nodes distribute the steam themselves.
-/// </summary>
 public static class SteamLinks {
     public static void Connect(World world) {
         var all = new HashSet<SteamStore>();
@@ -38,6 +33,10 @@ public static class SteamLinks {
             if (MachineAt(open) is { } machine) {
                 group.Add(machine.Store);
                 groups.Add(group);
+
+                foreach (var corner in new[] { (tile.X, tile.Y), (tile.X + 1, tile.Y), (tile.X, tile.Y + 1), (tile.X + 1, tile.Y + 1) }) {
+                    AddToCorner(corners, corner, machine.Store);
+                }
 
                 // Machines on neighbouring tiles share steam directly, as if connected.
                 foreach (var (nx, ny) in new[] { (tile.X + 1, tile.Y), (tile.X, tile.Y + 1) }) {
