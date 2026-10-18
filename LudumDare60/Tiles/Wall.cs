@@ -13,7 +13,7 @@ public sealed class Wall : Edge, Damageable {
         _model = manager.GetOrLoadModel("Assets/Wall.glb");
     }
     public void Progress(Double deltaTime) { }
-    public void Draw(Vector3 tileCentre, EdgeSide side) => Draw(tileCentre, side, Color.White);
+    public void Draw(Vector3 tileCentre, EdgeSide side) => Draw(tileCentre, side, new Color(235, 170, 120, 255));
 
     public void Draw(Vector3 tileCentre, EdgeSide side, Color tint) {
         var (offset, angle) = side switch {

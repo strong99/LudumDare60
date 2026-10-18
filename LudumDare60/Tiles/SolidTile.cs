@@ -11,7 +11,7 @@ public sealed class SolidTile : TileContent {
         var centre = origin + new Vector3(0.5f, -0.05f, 0.5f);
         var offsetTop = new Vector3(0.5f, 1f, 0.5f);
 
-        DrawPlane(origin + offsetTop, new(1, 1), Color.Black);
+        DrawPlane(origin + offsetTop, new(1, 1), new Color(28, 22, 18, 255));
 
         for(var w = 0; w < Walls.Length; w++) {
             if (Walls[w] is not { } wall) {
@@ -25,7 +25,7 @@ public sealed class SolidTile : TileContent {
                 _ => new Vector3(-0.5f, 0, 0),
             };
 
-            DrawModelEx(wall, centre + offset, Vector3.UnitY, -90f * w + 180, Vector3.One, Color.White);
+            DrawModelEx(wall, centre + offset, Vector3.UnitY, -90f * w + 180, Vector3.One, new Color(215, 170, 130, 255));
         }
     }
 }

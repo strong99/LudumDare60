@@ -5,6 +5,9 @@ using static Raylib_cs.Raylib;
 namespace LudumDare60.UI;
 
 public sealed class TextButton(String text, Vector2 position, TextureHandle texture, Action<TextButton> action) : UIElement {
+    public SoundHandle? HoverSound { get; set; }
+    public SoundHandle? ClickSound { get; set; }
+    public TextureHandle Texture { get; } = texture;
     public Int32 FontSize {
         get;
         set {
@@ -24,7 +27,7 @@ public sealed class TextButton(String text, Vector2 position, TextureHandle text
     private Boolean _isDirty = true;
     private Int32 _textWidth = 0;
     private Boolean _hover = false;
-    private TextureHandle _texture = texture;
+    private Boolean _hovering = false;
     public void Progress(Double deltaTime) {
 
         if (_isDirty) {
@@ -33,19 +36,37 @@ public sealed class TextButton(String text, Vector2 position, TextureHandle text
         }
 
         var mousePosition = GetMousePosition();
-        var halfX = _texture.Texture.Width / 2;
-        var halfY = _texture.Texture.Height / 2;
+        var halfX = Texture.Texture.Width / 2;
+        var halfY = Texture.Texture.Height / 2;
         var relativeMousePosition = mousePosition - Position;
         _hover = relativeMousePosition.X > -halfX && relativeMousePosition.X < halfX &&
                  relativeMousePosition.Y > -halfY && relativeMousePosition.Y < halfY;
         if (_hover) {
+            var newHover = !_hovering;
+            if (newHover && HoverSound is { } hoverSound) {
+                StopSound(hoverSound);
+                PlaySound(hoverSound);
+            }
+
+            if (!_hovering) {
+                _hovering = true;
+            }
+
             if (IsMouseButtonPressed(MouseButton.Left)) {
+                if (ClickSound is { } clickSound) {
+                    StopSound(clickSound);
+                    PlaySound(clickSound);
+                }
+
                 action(this);
             }
         }
+        else {
+            _hovering = false;
+        }
     }
     public void Draw() {
-        DrawTexture(_texture, (Int32)Position.X - _texture.Texture.Width / 2, (Int32)Position.Y - _texture.Texture.Height / 2, _hover ? Color.White : Color.Gray);
+        DrawTexture(Texture, (Int32)Position.X - Texture.Texture.Width / 2, (Int32)Position.Y - Texture.Texture.Height / 2, _hover ? Color.White : Color.Gray);
         DrawText(Text, (Int32)Position.X - _textWidth / 2, (Int32)Position.Y - FontSize / 2, FontSize, _hover ? Color.Black : Color.White);
     }
 }

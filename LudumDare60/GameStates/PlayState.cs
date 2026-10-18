@@ -16,7 +16,7 @@ public sealed class PlayState(App app) : GameState {
     private Tile? _hoveredTile = null;
     private Edge? _hoveredEdge = null;
     private EdgeSide _hoveredEdgeIndex = EdgeSide.North;
-    private TowerCore _towerCore;
+    private TowerCore _towerCoreRef;
     private Boolean _showSteamDebug = true;
     private ModelHandle _cityScape;
     private MusicGenerator<DramaticPlayMusicGeneratorStrategy>? _music;
@@ -29,6 +29,8 @@ public sealed class PlayState(App app) : GameState {
             _showSteamDebug = !_showSteamDebug;
         }
 
+        HandleRotation();
+        HandleZoom();
         HandleScroll();
         if (_buildMenu is null) {
             HandleTileHover();
@@ -54,27 +56,71 @@ public sealed class PlayState(App app) : GameState {
         if (_countDownCounter.TimeUp) {
             app.SetNextGameState(new GameOverState(app, true));
         }
-        else if (_towerCore.HitPoints <= 0) {
+        else if (_towerCoreRef.HitPoints <= 0) {
             app.SetNextGameState(new GameOverState(app, false));
         }
+    }
+    private void HandleRotation() {
+        const Single rotationSpeed = 1.5f;
+
+        var rotation = 0;
+        if (IsKeyDown(KeyboardKey.Q)) {
+            rotation -= 1;
+        }
+        if (IsKeyDown(KeyboardKey.E)) {
+            rotation += 1;
+        }
+
+        if (rotation == 0) {
+            return;
+        }
+
+        var angle = rotation * rotationSpeed * GetFrameTime();
+        var orbit = _camera.Position - _camera.Target;
+        orbit = Vector3.Transform(orbit, Quaternion.CreateFromAxisAngle(Vector3.UnitY, angle));
+        _camera.Position = _camera.Target + orbit;
+    }
+    private void HandleZoom() {
+        const Single zoomSpeed = 1.5f;
+        const Single wheelZoomFactor = 6f;
+        const Single minZoomDistance = 5f;
+        const Single maxZoomDistance = 30f;
+
+        var zoom = 0f;
+        if (IsKeyDown(KeyboardKey.LeftControl)) {
+            zoom -= 1;
+        }
+        if (IsKeyDown(KeyboardKey.Space)) {
+            zoom += 1;
+        }
+
+        zoom += GetMouseWheelMove() * wheelZoomFactor;
+
+        if (zoom == 0) {
+            return;
+        }
+
+        var orbit = _camera.Position - _camera.Target;
+        var distance = Math.Clamp(orbit.Length() * (1f - zoom * zoomSpeed * GetFrameTime()), minZoomDistance, maxZoomDistance);
+        _camera.Position = _camera.Target + Vector3.Normalize(orbit) * distance;
     }
     private void HandleScroll() {
         const Single speed = 10f;
         const Single edgeSize = 20f;
-
+        
         var mouseCoords = GetMousePosition();
         var direction = Vector2.Zero;
 
-        if (IsKeyDown(KeyboardKey.Left) || mouseCoords.X < edgeSize) {
+        if (IsKeyDown(KeyboardKey.Left) || IsKeyDown(KeyboardKey.A) || mouseCoords.X < edgeSize) {
             direction.X -= 1;
         }
-        if (IsKeyDown(KeyboardKey.Right) || mouseCoords.X > GetScreenWidth() - edgeSize) {
+        if (IsKeyDown(KeyboardKey.Right) || IsKeyDown(KeyboardKey.D) || mouseCoords.X > GetScreenWidth() - edgeSize) {
             direction.X += 1;
         }
-        if (IsKeyDown(KeyboardKey.Up) || mouseCoords.Y < edgeSize) {
+        if (IsKeyDown(KeyboardKey.Up) || IsKeyDown(KeyboardKey.W) || mouseCoords.Y < edgeSize) {
             direction.Y -= 1;
         }
-        if (IsKeyDown(KeyboardKey.Down) || mouseCoords.Y > GetScreenHeight() - edgeSize) {
+        if (IsKeyDown(KeyboardKey.Down) || IsKeyDown(KeyboardKey.S) || mouseCoords.Y > GetScreenHeight() - edgeSize) {
             direction.Y += 1;
         }
 
@@ -82,7 +128,13 @@ public sealed class PlayState(App app) : GameState {
             return;
         }
 
-        var offset = Vector2.Normalize(direction) * speed * GetFrameTime();
+        var forward = _camera.Target - _camera.Position;
+        forward.Y = 0;
+        forward = Vector3.Normalize(forward);
+
+        var right = new Vector3(-forward.Z, 0, forward.X);
+        var worldDirection = right * direction.X - forward * direction.Y;
+        var offset = Vector2.Normalize(new Vector2(worldDirection.X, worldDirection.Z)) * speed * GetFrameTime();
         var size = app.World!.Size;
         var target = _camera.Target;
         var newX = Math.Clamp(target.X + offset.X, 0, size);
@@ -182,7 +234,7 @@ public sealed class PlayState(App app) : GameState {
 
         var backgroundScale = 8;
         var backGroundOffset = 8;
-        DrawModel(_cityScape, new Vector3(backGroundOffset, -12, backGroundOffset), backgroundScale, Color.White);
+        DrawModel(_cityScape, new Vector3(backGroundOffset, -12, backGroundOffset), backgroundScale, new Color(190, 150, 120, 255));
 
         _buildMenu?.DrawPreview();
 
@@ -255,11 +307,11 @@ public sealed class PlayState(App app) : GameState {
 
         _cityScape = app.Resources.GetOrLoadModel("Assets/CityScape.glb");
 
-        _towerCore = world.Tiles
+        _towerCoreRef = world.Tiles
             .Cast<Tile>()
             .Select(t => (t.Content as OpenTile)?.Content as TowerCore)
             .FirstOrDefault(c => c is not null);
-        _towerCoreCounter = new(() => (Int32)MathF.Ceiling(_towerCore?.HitPoints ?? 0), labelBackgroundTexture, app.Resources.GetOrLoadTexture("Assets/IconDamage.png"));
+        _towerCoreCounter = new(() => (Int32)MathF.Ceiling(_towerCoreRef?.HitPoints ?? 0), labelBackgroundTexture, app.Resources.GetOrLoadTexture("Assets/IconDamage.png"));
 
         _music = new(new DramaticPlayMusicGeneratorStrategy());
         _music.Play();

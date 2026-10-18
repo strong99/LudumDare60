@@ -18,13 +18,13 @@ public sealed class OpenTile : TileContent {
             edge?.Progress(deltaTime);
         }
     }
+
     public void Draw(Vector3 origin) {
         var centre = origin + new Vector3(0.5f, -0.05f, 0.5f);
         if (!HideFloorThisFrame && Content?.RendersOwnFloor != true) {
-            DrawModelEx(_model, centre, new(), 0, new(1f, 1f, 1f), Color.White);
+            DrawModelEx(_model, centre, new(), 0, new(1f, 1f, 1f), new Color(150, 140, 135, 255));
         }
         HideFloorThisFrame = false;
-        DrawCubeWires(centre, 1, 0.1f, 1, Color.Brown);
 
         Content?.Draw(centre);
 

@@ -18,23 +18,24 @@ public sealed class App : IDisposable {
         var screenWidth = 1280;
         var screenHeight = 720;
         var title = "LudumDare60 - BoilerKeep";
-        var targetFPS = 60;
 
-        SetConfigFlags(ConfigFlags.ResizableWindow);
-        SetTargetFPS(targetFPS);
-        SetExitKey(KeyboardKey.Null);
+        SetConfigFlags(ConfigFlags.ResizableWindow | ConfigFlags.VSyncHint);
 
         InitWindow(screenWidth, screenHeight, title);
         InitAudioDevice();
+
+        SetExitKey(KeyboardKey.F12);
 
         _active = true;
         GameState?.Activate();
     }
     public void Tick(Double deltaTime) {
         if (_nextGameState is not null && _nextGameState != GameState) {
-            GameState?.Deactivate();
+            var oldState = GameState;
             GameState = _nextGameState;
+
             GameState?.Activate();
+            oldState?.Deactivate();
         }
 
         Progress(deltaTime);
@@ -48,6 +49,10 @@ public sealed class App : IDisposable {
             var currentTime = GetTime();
             var deltaTime = currentTime - previousTime;
             previousTime = currentTime;
+
+            if (IsKeyPressed(KeyboardKey.F11)) {
+                ToggleFullscreen();
+            }
 
             Tick(deltaTime);
         }

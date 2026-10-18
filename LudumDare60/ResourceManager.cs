@@ -19,7 +19,7 @@ public readonly record struct SoundHandle(String Key, Sound Sound) {
 public sealed class ResourceManager {
     class ReferenceCount<TResource>(TResource resource, Int32 count) {
         public TResource Resource { get; } = resource;
-        public Int32 Count { get; private set; }
+        public Int32 Count { get => count; }
         public void Grab() {
             if (count < 1) {
                 throw new Exception();
@@ -41,7 +41,7 @@ public sealed class ResourceManager {
         var fullFileName = Path.GetFullPath(fileName);
         if (_textureReferences.TryGetValue(fullFileName, out var reference)) {
             reference.Grab();
-            return new(fileName, reference.Resource);
+            return new(fullFileName, reference.Resource);
         }
 
         var texture = LoadTexture(fullFileName);
@@ -51,7 +51,7 @@ public sealed class ResourceManager {
 
         _textureReferences.Add(fullFileName, new(texture, 1));
 
-        return new(fileName, texture);
+        return new(fullFileName, texture);
     }
     public void ReleaseTexture(TextureHandle texture) {
         if (!_textureReferences.TryGetValue(texture.Key, out var reference)) {
@@ -75,11 +75,24 @@ public sealed class ResourceManager {
         }
 
         var model = LoadModel(fullFileName);
+        SmoothTextures(model);
 
         _modelReferences.Add(fullFileName, new(model, 1));
 
         return new(fullFileName, model);
     }
+    private static unsafe void SmoothTextures(Model model) {
+        var seen = new HashSet<UInt32>();
+        for (var i = 0; i < model.MaterialCount; i++) {
+            var texture = model.Materials[i].Maps[(Int32)MaterialMapIndex.Albedo].Texture;
+            if (texture.Id == 0 || !seen.Add(texture.Id)) {
+                continue;
+            }
+            GenTextureMipmaps(ref texture);
+            SetTextureFilter(texture, TextureFilter.Anisotropic8X);
+        }
+    }
+
     public void ReleaseModel(ModelHandle model) {
         if (!_modelReferences.TryGetValue(model.Key, out var reference)) {
             throw new Exception("Does not exist");
@@ -123,26 +136,29 @@ public sealed class ResourceManager {
     public SoundHandle GetOrLoadSound(String fileName) {
         var fullFileName = Path.GetFullPath(fileName);
         if (_soundReferences.TryGetValue(fullFileName, out var reference)) {
-            return new(fullFileName, reference.Resource);
+            reference.Grab();
+            return new(fullFileName, LoadSoundAlias(reference.Resource));
         }
 
         var sound = LoadSound(fullFileName);
         _soundReferences.Add(fullFileName, new(sound, 1));
 
-        return new(fullFileName, sound);
+        return new(fullFileName, LoadSoundAlias(sound));
     }
-    public void ReleaseSound(SoundHandle model) {
-        if (!_soundReferences.TryGetValue(model.Key, out var reference)) {
+    public void ReleaseSound(SoundHandle sound) {
+        if (!_soundReferences.TryGetValue(sound.Key, out var reference)) {
             throw new Exception("Does not exist");
         }
+
+        UnloadSoundAlias(sound);
 
         reference.Release();
 
         if (reference.Count == 0) {
             UnloadSound(reference.Resource);
-            _soundReferences.Remove(model.Key);
+            _soundReferences.Remove(sound.Key);
 
-            if (_waveReferences.TryGetValue(model.Key, out var value)) {
+            if (_waveReferences.TryGetValue(sound.Key, out var value)) {
                 UnloadWave(value);
             }
         }

@@ -7,6 +7,7 @@ namespace LudumDare60.GameStates;
 public sealed class GameOverState(App app, Boolean win) : GameState {
     private Camera3D _camera;
     private SsaoPass _ssao = null!;
+    private ModelHandle _cityScape;
     public void Progress(Double deltaTime) {
         if (IsKeyPressed(KeyboardKey.Escape)) {
             app.SetNextGameState(new MenuState(app));
@@ -17,12 +18,20 @@ public sealed class GameOverState(App app, Boolean win) : GameState {
 
         _ssao.Begin();
         BeginMode3D(_camera);
+        foreach (var decoration in world.Decorations) {
+            decoration.Draw();
+        }
         foreach (var tile in world.Tiles) {
             tile.Draw();
         }
         foreach (var enemy in world.Enemies) {
             enemy.Draw();
         }
+
+        var backgroundScale = 8;
+        var backGroundOffset = 8;
+        DrawModel(_cityScape, new Vector3(backGroundOffset, -12, backGroundOffset), backgroundScale, new Color(190, 150, 120, 255));
+
         EndMode3D();
         _ssao.End();
 
@@ -49,6 +58,7 @@ public sealed class GameOverState(App app, Boolean win) : GameState {
             Projection = CameraProjection.Perspective,
         };
         _ssao = new SsaoPass(_camera.FovY);
+        _cityScape = app.Resources.GetOrLoadModel("Assets/CityScape.glb");
     }
     public void Deactivate() {
         _ssao.Dispose();
