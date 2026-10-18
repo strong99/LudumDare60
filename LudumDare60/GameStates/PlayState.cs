@@ -249,8 +249,9 @@ public sealed class PlayState(App app) : GameState {
         };
         _ssao = new SsaoPass(_camera.FovY);
         _waveSpawner = new WaveSpawner(world);
-        _countDownCounter = new(3600);
-        _scrapCounter = new(() => app.World.Scraps);
+        var labelBackgroundTexture = app.Resources.GetOrLoadTexture("Assets/Button.png");
+        _countDownCounter = new(3600, labelBackgroundTexture, app.Resources.GetOrLoadTexture("Assets/IconClock.png"));
+        _scrapCounter = new(() => app.World.Scraps, labelBackgroundTexture, app.Resources.GetOrLoadTexture("Assets/IconScraps.png"));
 
         _cityScape = app.Resources.GetOrLoadModel("Assets/CityScape.glb");
 
@@ -258,7 +259,7 @@ public sealed class PlayState(App app) : GameState {
             .Cast<Tile>()
             .Select(t => (t.Content as OpenTile)?.Content as TowerCore)
             .FirstOrDefault(c => c is not null);
-        _towerCoreCounter = new(() => (Int32)MathF.Ceiling(_towerCore?.HitPoints ?? 0));
+        _towerCoreCounter = new(() => (Int32)MathF.Ceiling(_towerCore?.HitPoints ?? 0), labelBackgroundTexture, app.Resources.GetOrLoadTexture("Assets/IconDamage.png"));
 
         _music = new(new DramaticPlayMusicGeneratorStrategy());
         _music.Play();

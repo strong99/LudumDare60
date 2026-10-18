@@ -11,6 +11,7 @@ public sealed class MenuState(App app) : GameState {
     private const Int32 _fontSize = 20;
     private const Int32 _padding = 20;
     private const Int32 _spacing = 10;
+    private Label _label;
     private TextButton _newGame;
     private TextButton? _continueGame;
     private TextButton _exit;
@@ -37,6 +38,7 @@ public sealed class MenuState(App app) : GameState {
         if (GetScreenWidth() != _layoutWidth) {
             UpdateOnResize();
         }
+        _label.Progress(deltaTime);
         _newGame.Progress(deltaTime);
         _continueGame?.Progress(deltaTime);
         _exit.Progress(deltaTime);
@@ -63,6 +65,7 @@ public sealed class MenuState(App app) : GameState {
         EndMode3D();
         _ssao.End();
 
+        _label.Draw();
         _newGame.Draw();
         _continueGame?.Draw();
         _exit.Draw();
@@ -86,18 +89,20 @@ public sealed class MenuState(App app) : GameState {
         _cityModel = app.Resources.GetOrLoadModel("Assets/CityScape.glb");
         _zeppelinModel = app.Resources.GetOrLoadModel("Assets/Zeppelin.glb");
 
-        _newGame = new TextButton("new", new(centreX, y += buttonHeight), _ => {
+        var buttonTexture = app.Resources.GetOrLoadTexture("Assets/Button.png");
+        _label = new Label("Boilerkeep", new(centreX, y += buttonHeight), buttonTexture);
+        _newGame = new TextButton("new", new(centreX, y += buttonHeight), buttonTexture, _ => {
             app.CreateNewWorld();
             app.SetNextGameState(new PlayState(app));
         }) {
             FontSize = _fontSize
         };
         if (app.World is not null) {
-            _continueGame = new TextButton("continue", new(centreX, y += buttonHeight), _ => app.SetNextGameState(new PlayState(app))) {
+            _continueGame = new TextButton("continue", new(centreX, y += buttonHeight), buttonTexture, _ => app.SetNextGameState(new PlayState(app))) {
                 FontSize = _fontSize,
             };
         }
-        _exit = new TextButton("exit", new(centreX, y += buttonHeight), _ => app.Exit()) {
+        _exit = new TextButton("exit", new(centreX, y += buttonHeight), buttonTexture, _ => app.Exit()) {
             FontSize = _fontSize
         };
 

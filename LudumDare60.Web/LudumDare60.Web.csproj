@@ -19,7 +19,7 @@
 
 	<ItemGroup>
 		<!-- Workaround: WasmFilesToIncludeInFileSystem doesn't work with this set up -->
-		<EmbeddedResource Include="..\LudumDare60\Assets\**\*.glb" Visible="false" LogicalName="Assets/%(RecursiveDir)%(Filename)%(Extension)" />
+		<EmbeddedResource Include="..\LudumDare60\Assets\**\*" Visible="false" LogicalName="Assets/%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
 	
 	<PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
