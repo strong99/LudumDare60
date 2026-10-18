@@ -214,7 +214,7 @@ public sealed class PlayState(App app) : GameState {
         if (_hoveredTile is { } hovered) {
             var solid = hovered.Content is SolidTile;
             var height = solid ? 1f : 0.1f;
-            var centre = new Vector3(hovered.X + 0.5f, solid ? 0.5f : -0.05f, hovered.Y + 0.5f);
+            var centre = new Vector3(hovered.X + 0.5f, solid ? 0.5f : 0f, hovered.Y + 0.5f);
             DrawCubeWires(centre, 1.02f, height + 0.02f, 1.02f, Color.Yellow);
 
             if (!solid) {

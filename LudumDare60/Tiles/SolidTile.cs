@@ -8,7 +8,7 @@ public sealed class SolidTile : TileContent {
     public ModelHandle?[] Walls { get; } = new ModelHandle?[4];
     public void Progress(Double deltaTime) { }
     public void Draw(Vector3 origin) {
-        var centre = origin + new Vector3(0.5f, -0.05f, 0.5f);
+        var centre = origin + new Vector3(0.5f, 0f, 0.5f);
         var offsetTop = new Vector3(0.5f, 1f, 0.5f);
 
         DrawPlane(origin + offsetTop, new(1, 1), new Color(28, 22, 18, 255));

@@ -22,7 +22,7 @@ public sealed class BuildMenu : UIElement {
 
     public BuildMenu(World world, Tile worldTile, OpenTile tile, EdgeSide edge, ResourceManager resources, Action close) {
         _close = close;
-        _previewCentre = new Vector3(worldTile.X + 0.5f, -0.05f, worldTile.Y + 0.5f);
+        _previewCentre = new Vector3(worldTile.X + 0.5f, 0f, worldTile.Y + 0.5f);
 
         var crusherModel = resources.GetOrLoadModel(Crusher.FileName);
         var pipe = new Pipe(resources);
