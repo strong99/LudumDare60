@@ -341,6 +341,12 @@ public sealed class PlayState(App app) : GameState {
                 var isSource = store.Production > 0;
                 var starved = !isSource && machine is Trap && store.Steam < _lowSteam;
                 DrawGauge(anchor, store, starved, isSource ? "BOILER" : machine is Trap ? null : "RELAY");
+
+                if (store.DamagePoints > 0) {
+                    var marker = GetWorldToScreen(new Vector3(tile.X + 0.5f, 0.5f, tile.Y + 0.5f), _camera);
+                    var text = new String('!', store.DamagePoints);
+                    DrawText(text, (Int32)marker.X - MeasureText(text, 16) / 2, (Int32)marker.Y - 8, 16, Color.Red);
+                }
             }
 
             for (var i = 0; i < open.Edges.Length; i++) {
@@ -452,6 +458,7 @@ public sealed class PlayState(App app) : GameState {
         world.EnemyDied += OnEnemyDied;
     }
     private void OnEnemyDied(Enemy enemy) {
+        app.World!.AddScraps(ScrapsPerKill);
         _scrapLabels.Add(new FloatingScrapLabel(new Vector3(enemy.Position.X, 1f, enemy.Position.Y), ScrapsPerKill));
     }
     public void Deactivate() {

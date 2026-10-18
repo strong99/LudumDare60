@@ -60,6 +60,8 @@ public sealed class World {
 
     public void Spend(Int32 cost) => Scraps -= cost;
 
+    public void AddScraps(Int32 amount) => Scraps += amount;
+
     public Tile? GetNeighbour(Tile tile, EdgeSide side) {
         var (dx, dy) = side switch {
             EdgeSide.North => (0, -1),
