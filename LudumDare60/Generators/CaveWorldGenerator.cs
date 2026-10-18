@@ -1,6 +1,9 @@
-﻿using System.Collections.ObjectModel;
+﻿using Microsoft.VisualBasic;
+using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Xml.Linq;
 
 namespace LudumDare60.Generators;
 
@@ -32,10 +35,10 @@ public sealed class CaveWorldGenerator {
 
         CarveOutMainPath(entrances, [towerCore], tiles);
 
-        return ConvertToTiles(tiles, resourceManager);
+        return ConvertToTiles(random, tiles, resourceManager);
     }
 
-    private static (Tile[,] Tiles, Collection<Decoration> Decorations) ConvertToTiles(CaveTile[,] caveTiles, ResourceManager resourceManager) {
+    private static (Tile[,] Tiles, Collection<Decoration> Decorations) ConvertToTiles(Random random, CaveTile[,] caveTiles, ResourceManager resourceManager) {
         var width = caveTiles.GetLength(0);
         var height = caveTiles.GetLength(1);
 
@@ -74,7 +77,7 @@ public sealed class CaveWorldGenerator {
                         r = -90;
                     }
 
-                    Vector3 position = new (x + 0.5f + dx, 0, y + 0.5f + dy);
+                    Vector3 position = new(x + 0.5f + dx, 0, y + 0.5f + dy);
                     Decoration decoration = new StaticDecoration(resourceManager.GetOrLoadModel("Assets/ElevatorShaft.glb"), position, r);
                     decorations.Add(decoration);
 
@@ -84,7 +87,115 @@ public sealed class CaveWorldGenerator {
                 }
             }
         }
+
+        DecorateSolidTiles(random, tiles, resourceManager);
+
+        decorations = [
+            ..decorations,
+            ..GenerateOuterWallDecorations(random, caveTiles, resourceManager)
+        ];
+
         return (tiles, decorations);
+    }
+
+    private static void DecorateSolidTiles(Random random, Tile[,] tiles, ResourceManager resourceManager) {
+        var width = tiles.GetLength(0);
+        var height = tiles.GetLength(1);
+
+        var directions = new Point[] {
+            new(0,-1),
+            new(1,0),
+            new(0,1),
+            new(-1,0)
+        };
+
+        var wallTypes = new String[] {
+            "Assets/SolidWall.01.glb",
+            "Assets/SolidWall.02.glb"
+        };
+
+        for (var x = 0; x < width; ++x) {
+            for (var y = 0; y < height; ++y) {
+                var tile = tiles[x, y];
+                if (tile.Content is SolidTile solidTile) {
+                    for (var d = 0; d < directions.Length; d++) {
+                        var direction = directions[d];
+                        var sx = x + direction.X;
+                        var sy = y + direction.Y;
+                        if (sx < 0 || sy < 0 || sx >= width || sy >= height) {
+                            continue;
+                        }
+                        if (tiles[sx, sy].Content is OpenTile) {
+                            var wallType = wallTypes[random.Next() % wallTypes.Length];
+                            solidTile.Walls[d] = resourceManager.GetOrLoadModel(wallType);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static Collection<Decoration> GenerateOuterWallDecorations(Random random, CaveTile[,] caveTiles, ResourceManager resourceManager) {
+        var width = caveTiles.GetLength(0);
+        var height = caveTiles.GetLength(1);
+
+        var decorations = new Collection<Decoration>();
+        Dictionary<String, String[]> canChangeTo = new() {
+            ["first"] = ["Assets/TowerSide.02b.glb", "Assets/TowerSide.03.glb"],
+            ["last"] = ["Assets/TowerSide.02.glb", "Assets/TowerSide.03.glb"],
+            ["Assets/TowerSide.01.glb"] = ["Assets/TowerSide.01.glb", "Assets/TowerSide.02.glb"],
+            ["Assets/TowerSide.02.glb"] = ["Assets/TowerSide.02b.glb", "Assets/TowerSide.03.glb"],
+            ["Assets/TowerSide.02b.glb"] = ["Assets/TowerSide.01.glb", "Assets/TowerSide.02.glb"],
+            ["Assets/TowerSide.03.glb"] = ["Assets/TowerSide.03.glb", "Assets/TowerSide.02b.glb"]
+        };
+
+        var offset = new Vector3(0.5f, 0, -0.5f);
+        var edges = new Vector3[] { new(-1, 0, 0), new(0, 0, 1), new(1, 0, 0), new(0, 0, -1) };
+        var orientation = new Int32[] { 180, -90, 0, 90 };
+        for (var e = 0; e < edges.Length; e++) {
+            var edge = edges[e];
+            var rotation = orientation[e];
+
+            var min = 0;
+            var max = width;
+            var edgeOffset = offset + e switch {
+                0 => new Vector3(width - 1, 0, 0),
+                1 => new Vector3(0, 0, 1),
+                2 => new Vector3(0, 0, height),
+                3 => new Vector3(width - 1, 0, height),
+                _ => Vector3.Zero
+            };
+
+            String previous = "first";
+            Console.WriteLine($"Edge {e}");
+            for (var x = min; x < max; x++) {
+                var last = x == max - 1;
+                var nextChoices = canChangeTo[previous];
+                if (last) {
+                    nextChoices = nextChoices.Where(x => canChangeTo["last"].Contains(x)).ToArray();
+                }
+                var nextChoice = nextChoices[random.Next() % nextChoices.Length];
+                previous = nextChoice;
+
+                decorations.Add(new StaticDecoration(resourceManager.GetOrLoadModel(nextChoice), edge * x + edgeOffset, rotation));
+                Console.WriteLine($" - {nextChoice}");
+            }
+        }
+
+        var corners = new Vector3[] {
+            new(0.5f, 0, 0.5f),
+            new(width - 0.5f, 0, 0.5f),
+            new(width - 0.5f, 0, height - 0.5f),
+            new(0.5f, 0, height - 0.5f)
+        };
+        var cornerOrientation = new Int32[] { 180, 90, 0, -90 };
+        var cornerModels = new[] { "Assets/TowerCorner.01.glb", "Assets/TowerCorner.02.glb", "Assets/TowerCorner.03.glb" };
+        for (var corner = 0; corner < 4; corner++) {
+            var model = cornerModels[random.Next() % cornerModels.Length];
+            decorations.Add(new StaticDecoration(resourceManager.GetOrLoadModel(model), corners[corner], cornerOrientation[corner]));
+        }
+
+        return decorations;
     }
 
     private CaveTile[,] InstantiateTileArray(Int32 size) {

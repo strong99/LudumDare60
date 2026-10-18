@@ -21,12 +21,18 @@ public sealed class SsaoPass(Single fovY) : IDisposable {
         uniform float uPixelsPerUnit; 
         uniform float uRadius;
         uniform float uStrength;
+        uniform vec2 uTanHalfFov;
 
         out vec4 finalColor;
 
         float linearDepth(vec2 uv) {
             float z = texture(uDepth, uv).r * 2.0 - 1.0;
             return 2.0 * uNear * uFar / (uFar + uNear - z * (uFar - uNear));
+        }
+
+        vec3 viewPos(vec2 uv, float depth) {
+            vec2 ndc = uv * 2.0 - 1.0;
+            return vec3(ndc * uTanHalfFov * depth, -depth);
         }
 
         float hash(vec2 p) {
@@ -44,16 +50,24 @@ public sealed class SsaoPass(Single fovY) : IDisposable {
             float radiusPixels = clamp(uRadius * uPixelsPerUnit / centre, 2.0, 64.0);
             float angle = hash(gl_FragCoord.xy) * 6.2831853;
 
+            vec3 pos = viewPos(fragTexCoord, centre);
+            vec3 normal = normalize(cross(dFdx(pos), dFdy(pos)));
+            if (dot(normal, pos) > 0.0) {
+                normal = -normal;
+            }
+
             const int samples = 16;
             float occlusion = 0.0;
             for (int i = 0; i < samples; i++) {
                 float t = (float(i) + 0.5) / float(samples);
-                float a = angle + float(i) * 2.399963; // golden angle spiral
+                float a = angle + float(i) * 2.399963;
                 vec2 offset = vec2(cos(a), sin(a)) * sqrt(t) * radiusPixels * uTexel;
-                float sampleDepth = linearDepth(fragTexCoord + offset);
-                float diff = centre - sampleDepth; // > 0: sample is nearer the camera
-                float rangeCheck = smoothstep(0.0, 1.0, uRadius / max(abs(diff), 0.0001));
-                occlusion += (diff > 0.03 ? 1.0 : 0.0) * rangeCheck;
+                vec2 sampleUv = fragTexCoord + offset;
+                float sampleDepth = linearDepth(sampleUv);
+                vec3 toSample = viewPos(sampleUv, sampleDepth) - pos;
+                float above = dot(normal, toSample) / max(length(toSample), 0.0001); // 1: directly above the surface
+                float rangeCheck = smoothstep(0.0, 1.0, uRadius / max(abs(centre - sampleDepth), 0.0001));
+                occlusion += (above > 0.15 ? 1.0 : 0.0) * rangeCheck;
             }
 
             float ao = 1.0 - uStrength * occlusion / float(samples);
@@ -65,7 +79,7 @@ public sealed class SsaoPass(Single fovY) : IDisposable {
     private Texture2D _depth;
     private Shader _shader;
     private Int32 _width, _height;
-    private Int32 _depthLoc, _texelLoc, _nearLoc, _farLoc, _pixelsPerUnitLoc, _radiusLoc, _strengthLoc;
+    private Int32 _depthLoc, _texelLoc, _nearLoc, _farLoc, _pixelsPerUnitLoc, _radiusLoc, _strengthLoc, _tanHalfFovLoc;
 
     public Single Radius { get; set; } = 0.6f;
     public Single Strength { get; set; } = 1.2f;
@@ -105,6 +119,7 @@ public sealed class SsaoPass(Single fovY) : IDisposable {
             _pixelsPerUnitLoc = GetShaderLocation(_shader, "uPixelsPerUnit");
             _radiusLoc = GetShaderLocation(_shader, "uRadius");
             _strengthLoc = GetShaderLocation(_shader, "uStrength");
+            _tanHalfFovLoc = GetShaderLocation(_shader, "uTanHalfFov");
         }
     }
 
@@ -119,6 +134,8 @@ public sealed class SsaoPass(Single fovY) : IDisposable {
         EndTextureMode();
 
         var pixelsPerUnit = _height / (MathF.Tan(fovY * MathF.PI / 360f) * 2f);
+        var tanHalfFovY = MathF.Tan(fovY * MathF.PI / 360f);
+        SetShaderValue(_shader, _tanHalfFovLoc, new Vector2(tanHalfFovY * _width / _height, tanHalfFovY), ShaderUniformDataType.Vec2);
         SetShaderValue(_shader, _texelLoc, new Vector2(1f / _width, 1f / _height), ShaderUniformDataType.Vec2);
         SetShaderValue(_shader, _nearLoc, (Single)_near, ShaderUniformDataType.Float);
         SetShaderValue(_shader, _farLoc, (Single)_far, ShaderUniformDataType.Float);
