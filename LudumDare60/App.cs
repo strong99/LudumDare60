@@ -14,34 +14,49 @@ public sealed class App : IDisposable {
     public void SetNextGameState(GameState state) {
         _nextGameState = state;
     }
-    public void Run() {
-        _active = true;
+    public void Init() {
         var screenWidth = 1280;
         var screenHeight = 720;
         var title = "LudumDare60 - BoilerKeep";
         var targetFPS = 60;
 
-        InitWindow(screenWidth, screenHeight, title);
+        SetConfigFlags(ConfigFlags.ResizableWindow);
         SetTargetFPS(targetFPS);
         SetExitKey(KeyboardKey.Null);
 
+        InitWindow(screenWidth, screenHeight, title);
+        InitAudioDevice();
+
+        _active = true;
         GameState?.Activate();
+    }
+    public void Tick(Double deltaTime) {
+        if (_nextGameState is not null && _nextGameState != GameState) {
+            GameState?.Deactivate();
+            GameState = _nextGameState;
+            GameState?.Activate();
+        }
+
+        Progress(deltaTime);
+        Draw();
+    }
+    public void Run() {
+        Init();
 
         var previousTime = GetTime();
         while (!WindowShouldClose() && _active) {
-            if (_nextGameState is not null && _nextGameState != GameState) {
-                GameState?.Deactivate();
-                GameState = _nextGameState;
-                GameState?.Activate();
-            }
-
             var currentTime = GetTime();
             var deltaTime = currentTime - previousTime;
             previousTime = currentTime;
 
-            Progress(deltaTime);
-            Draw();
+            Tick(deltaTime);
         }
+
+        Deinit();
+    }
+    
+    public void Deinit() {
+        _active = false;
 
         GameState?.Deactivate();
 
