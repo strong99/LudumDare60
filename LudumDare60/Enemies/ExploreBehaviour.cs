@@ -59,6 +59,12 @@ public sealed class ExploreBehaviour(World world, Enemy enemy, Point? home = nul
                 enemy.Behaviour = new AttackBehaviour(world, enemy, _home);
                 return;
             }
+
+            if (enemy.Memory.RetrieveOne(MemoryTileType.Core) is { } blockedCore
+                && _pathfinder.FindObstacleToBreak(tile, p => p == new Point((Int32)blockedCore.X, (Int32)blockedCore.Y)) is not null) {
+                enemy.Behaviour = new AttackBehaviour(world, enemy, _home);
+                return;
+            }
         }
 
         if (_path is null || _pathIndex >= _path.Count) {
@@ -68,6 +74,11 @@ public sealed class ExploreBehaviour(World world, Enemy enemy, Point? home = nul
             _path = _pathfinder.FindNearestUnexplored(tile, enemy.Memory);
 
             if (_path is null) {
+                if (_pathfinder.FindObstacleToBreak(tile, p => enemy.Memory.IsKnown(new Vector2(p.X, p.Y)) == MemoryTileType.None) is var (obstaclePath, obstacle)) {
+                    enemy.Behaviour = new AttackBehaviour(world, enemy, _home, obstaclePath, obstacle);
+                    return;
+                }
+
                 if (_pathfinder.FindWallToBreach(tile, enemy.Memory) is var (wallPath, side)) {
                     var wallTile = wallPath.Count > 0 ? wallPath[^1] : tile;
                     enemy.Behaviour = new AttackBehaviour(world, enemy, _home, wallTile, side);

@@ -59,7 +59,25 @@ public sealed class Pathfinder(World world) {
     /// <summary>Shortest path to the given tile, or null when it is unreachable.</summary>
     public List<Point>? FindPath(Point start, Point goal) => Search(start, p => p == goal);
 
-    private List<Point>? Search(Point start, Func<Point, Boolean> isGoal) {
+    /// <summary>
+    /// Like a normal search but allowed to cut through destructible blockers (boilers, relays).
+    /// Returns the tiles to walk up to the first blocker on the route, and that blocker's tile.
+    /// Null when no route exists or the route is clear (use the normal search then).
+    /// </summary>
+    public (List<Point> Path, Point Obstacle)? FindObstacleToBreak(Point start, Func<Point, Boolean> isGoal) {
+        var path = Search(start, isGoal, throughObstacles: true);
+        if (path is null) {
+            return null;
+        }
+
+        var index = path.FindIndex(IsObstacle);
+        return index < 0 ? null : (path[..index], path[index]);
+    }
+
+    private Boolean IsObstacle(Point tile) =>
+        (world.Tiles[tile.X, tile.Y].Content as OpenTile)?.Content is { BlocksMovement: true } and Damageable;
+
+    private List<Point>? Search(Point start, Func<Point, Boolean> isGoal, Boolean throughObstacles = false) {
         var previous = new Dictionary<Point, Point> { [start] = start };
         var queue = new Queue<Point>();
         queue.Enqueue(start);
@@ -84,7 +102,7 @@ public sealed class Pathfinder(World world) {
                     || previous.ContainsKey(next)
                     || open.Edges[(Int32)side] is Wall
                     || world.Tiles[next.X, next.Y].Content is not OpenTile nextOpen
-                    || nextOpen.Content?.BlocksMovement == true) {
+                    || (nextOpen.Content?.BlocksMovement == true && !(throughObstacles && IsObstacle(next)))) {
                     continue;
                 }
 

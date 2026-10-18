@@ -103,7 +103,7 @@ public sealed class App : IDisposable {
     public void CreateNewWorld() {
         var worldGen = new CaveWorldGenerator();
 
-        var (tiles, decorations) = worldGen.Generate(16, Resources, 100);
+        var (tiles, decorations) = worldGen.Generate(16, Resources);
         World = new(16, Resources, tiles, decorations);
     }
 }

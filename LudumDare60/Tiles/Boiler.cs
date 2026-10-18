@@ -4,10 +4,13 @@ using static Raylib_cs.Raylib;
 
 namespace LudumDare60.Tiles;
 
-public sealed class Boiler : OpenTileContent, SteamConnected {
+public sealed class Boiler : OpenTileContent, SteamConnected, Damageable {
     private const Single _volume = 10f;
     private const Single _production = 10f;
     private const Int32 _maxDamagePoints = 5;
+    public Boolean BlocksMovement { get => true; }
+    public Single HitPoints { get; set; } = 10f;
+    public Int32 MaxHitPoints { get; set; } = 10;
     public Boolean RendersOwnFloor { get => true; }
     public SteamStore Store { get; } = new(_volume, _production, _maxDamagePoints);
     private readonly ModelHandle _model;

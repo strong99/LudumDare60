@@ -17,6 +17,16 @@ public sealed class AttackBehaviour(World world, Enemy enemy, Point home) : Enem
         _wall = (wallTile, wallSide);
     }
 
+    private Point? _obstacle;
+    private Boolean _exploreAfterObstacle;
+
+    public AttackBehaviour(World world, Enemy enemy, Point home, List<Point> pathToObstacle, Point obstacle)
+        : this(world, enemy, home) {
+        _path = pathToObstacle;
+        _obstacle = obstacle;
+        _exploreAfterObstacle = true;
+    }
+
     private void GiveUp() => enemy.Behaviour = new ReturnHomeBehaviour(world, enemy, home);
 
     private Damageable? FindTarget(Point core) {
@@ -65,7 +75,10 @@ public sealed class AttackBehaviour(World world, Enemy enemy, Point home) : Enem
             return;
         }
 
-        if (_wall is { } wall) {
+        if (_obstacle is { } obstacle) {
+            AttackObstacle(deltaTime, obstacle);
+        }
+        else if (_wall is { } wall) {
             AttackWall(deltaTime, wall.Tile, wall.Side);
         }
         else {
@@ -110,6 +123,34 @@ public sealed class AttackBehaviour(World world, Enemy enemy, Point home) : Enem
         }
     }
 
+    private void AttackObstacle(Double deltaTime, Point obstacle) {
+        if (FindTarget(obstacle) is not { } target || target is TowerCore) {
+            FinishObstacle();
+            return;
+        }
+
+        if (!Follow(deltaTime, _path!.Count)) {
+            return;
+        }
+
+        Face(new Vector2(obstacle.X + 0.5f, obstacle.Y + 0.5f));
+        enemy.Attack();
+        target.HitPoints = MathF.Max(0, target.HitPoints - _damagePerSecond * (Single)deltaTime);
+        if (target.HitPoints <= 0) {
+            world.ClearContent(world.Tiles[obstacle.X, obstacle.Y]);
+            FinishObstacle();
+        }
+    }
+
+    private void FinishObstacle() {
+        _obstacle = null;
+        _path = null;
+        _pathIndex = 0;
+        if (_exploreAfterObstacle) {
+            enemy.Behaviour = new ExploreBehaviour(world, enemy, home);
+        }
+    }
+
     private void AttackCore(Double deltaTime) {
         if (enemy.Memory.RetrieveOne(MemoryTileType.Core) is not { } corePosition) {
             GiveUp();
@@ -129,6 +170,12 @@ public sealed class AttackBehaviour(World world, Enemy enemy, Point home) : Enem
             _path = _pathfinder.FindPath(tile, core);
             _pathIndex = 0;
             if (_path is null) {
+                if (_pathfinder.FindObstacleToBreak(tile, p => p == core) is var (obstaclePath, obstacle)) {
+                    _path = obstaclePath;
+                    _obstacle = obstacle;
+                    return;
+                }
+
                 enemy.Behaviour = new ExploreBehaviour(world, enemy, home);
                 return;
             }

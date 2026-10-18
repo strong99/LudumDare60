@@ -41,8 +41,8 @@ public sealed class BuildMenu : UIElement {
         _options = [
             new("clear edge", 2, () => true, () => world.SetEdge(worldTile, edge, null)),
             new("clear tile", 2, () => true, () => world.ClearContent(worldTile)),
-            new("repair", 5, () => true, () => { foreach (var store in DamagedStores(tile, edge)) { store.Repair(); } }),
-            new("pipe", 5, () => true, () => world.SetEdge(worldTile, edge, pipe),
+            new("repair", 3, () => true, () => { foreach (var store in DamagedStores(tile, edge)) { store.Repair(); } }),
+            new("pipe", 2, () => true, () => world.SetEdge(worldTile, edge, pipe),
                 (centre, tint) => pipe.Draw(centre, edge, tint)),
             new("wall", 20, () => true, () => world.SetEdge(worldTile, edge, wall),
                 (centre, tint) => wall.Draw(centre, edge, tint)),

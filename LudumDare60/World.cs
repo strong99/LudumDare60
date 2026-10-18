@@ -7,7 +7,7 @@ public sealed class World {
     public Tile[,] Tiles { get; }
     public Collection<Decoration> Decorations { get; }
     public Collection<Enemy> Enemies { get; } = [];
-    public Int32 Scraps { get; private set; } = 1000;
+    public Int32 Scraps { get; private set; } = 100;
     public Double Duration { get; }
     public Memory EnemyKnowledge { get; } = new();
 
