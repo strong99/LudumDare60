@@ -8,9 +8,35 @@ public static partial class WebApp {
     private static App _app = new();
 
     public static async Task Main(string[] args) {
+        ExtractAssets();
+
         _app.Init();
 
         _previousTime = GetTime();
+    }
+
+    /// <summary>
+    /// Workaround:Load the files into the virtual file system for Raylib as 
+    /// the WasmFilesToIncludeInFileSystem won't work with this dotnet SDK 
+    /// it seems
+    /// </summary>
+    private static void ExtractAssets() {
+        var assembly = typeof(WebApp).Assembly;
+        foreach (var resourceName in assembly.GetManifestResourceNames()) {
+            var path = resourceName.Replace('\\', '/');
+            if (!path.StartsWith("Assets/", StringComparison.Ordinal)) {
+                continue;
+            }
+
+            var directory = Path.GetDirectoryName(path);
+            if (!String.IsNullOrEmpty(directory)) {
+                Directory.CreateDirectory(directory);
+            }
+
+            using var source = assembly.GetManifestResourceStream(resourceName)!;
+            using var destination = File.Create(path);
+            source.CopyTo(destination);
+        }
     }
 
     [JSExport]

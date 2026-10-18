@@ -8,8 +8,11 @@ public sealed class SsaoPass(Single fovY) : IDisposable {
     private const Double _near = 0.1;
     private const Double _far = 100.0;
 
+    private const String _headerDesktop = "#version 330\nout vec4 finalColor;\n";
+    // The web build of raylib targets GLES2, so the shader has to be GLSL ES 1.00.
+    private const String _headerEs = "#version 100\n#extension GL_OES_standard_derivatives : enable\nprecision highp float;\n#define in varying\n#define texture texture2D\n#define finalColor gl_FragColor\n";
+
     private const String _fragmentShader = """
-        #version 330
         in vec2 fragTexCoord;
         in vec4 fragColor;
 
@@ -22,8 +25,6 @@ public sealed class SsaoPass(Single fovY) : IDisposable {
         uniform float uRadius;
         uniform float uStrength;
         uniform vec2 uTanHalfFov;
-
-        out vec4 finalColor;
 
         float linearDepth(vec2 uv) {
             float z = texture(uDepth, uv).r * 2.0 - 1.0;
@@ -108,7 +109,7 @@ public sealed class SsaoPass(Single fovY) : IDisposable {
         _depth = new Texture2D { Id = depthId, Width = width, Height = height, Mipmaps = 1 };
 
         if (_shader.Id == 0) {
-            _shader = LoadShaderFromMemory(null, _fragmentShader);
+            _shader = LoadShaderFromMemory(null, (OperatingSystem.IsBrowser() ? _headerEs : _headerDesktop) + _fragmentShader);
             if (!IsShaderValid(_shader)) {
                 throw new Exception("Failed to compile SSAO shader");
             }
