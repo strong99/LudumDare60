@@ -22,7 +22,7 @@ public sealed class OpenTile : TileContent {
     public void Draw(Vector3 origin) {
         var centre = origin + new Vector3(0.5f, 0f, 0.5f);
         if (!HideFloorThisFrame && Content?.RendersOwnFloor != true) {
-            DrawModelEx(_model, centre, new(), 0, new(1f, 1f, 1f), new Color(150, 140, 135, 255));
+            DrawModelEx(_model, centre, new(), 0, new(1f, 1f, 1f), Color.White);
         }
         HideFloorThisFrame = false;
 

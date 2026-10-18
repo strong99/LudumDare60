@@ -18,6 +18,7 @@ public sealed class CaveWorldGenerator {
     private sealed class CaveTile {
         public Int32 DistanceFromEntrance { get; set; } = 0;
         public Single Weight { get; set; } = 0;
+        public Boolean Protected { get; set; }
         public CaveTileType Type { get; set; } = CaveTileType.Solid;
     }
     public (Tile[,] Tiles, Collection<Decoration> decorations) Generate(Int32 size, ResourceManager resourceManager, Int32 seed = -1) {
@@ -26,19 +27,18 @@ public sealed class CaveWorldGenerator {
         var tiles = InstantiateTileArray(size);
 
         var entrances = ApplyEntrancesTo(tiles, size, random);
-        var furthestTiles = BFSScoreAndDistance(tiles, entrances, random);
+        BFSScoreAndDistance(tiles, entrances, random);
 
-        var towerCore = furthestTiles[random.Next() % furthestTiles.Length];
-        tiles[towerCore.X, towerCore.Y].Type = CaveTileType.Core;
+        var (towerCore, coreFront) = PlaceCore(tiles, random);
 
         CaveOutRandomRooms(tiles, random, towerCore);
 
-        CarveOutMainPath(entrances, [towerCore], tiles);
+        CarveOutMainPath(entrances, towerCore, tiles);
 
-        return ConvertToTiles(random, tiles, resourceManager);
+        return ConvertToTiles(random, tiles, resourceManager, coreFront);
     }
 
-    private static (Tile[,] Tiles, Collection<Decoration> Decorations) ConvertToTiles(Random random, CaveTile[,] caveTiles, ResourceManager resourceManager) {
+    private static (Tile[,] Tiles, Collection<Decoration> Decorations) ConvertToTiles(Random random, CaveTile[,] caveTiles, ResourceManager resourceManager, EdgeSide coreFront) {
         var width = caveTiles.GetLength(0);
         var height = caveTiles.GetLength(1);
 
@@ -47,10 +47,12 @@ public sealed class CaveWorldGenerator {
         for (var x = 0; x < width; x++) {
             for (var y = 0; y < height; y++) {
                 TileContent content = caveTiles[x, y].Type switch {
-                    CaveTileType.Solid => new SolidTile(),
+                    CaveTileType.Solid => new SolidTile() {
+                        Top = resourceManager.GetOrLoadModel("Assets/Top.glb")
+                    },
                     CaveTileType.Open => new OpenTile(resourceManager),
                     CaveTileType.Entrance => new OpenTile(resourceManager) { Content = new TowerEntrance(resourceManager) },
-                    CaveTileType.Core => new OpenTile(resourceManager) { Content = new TowerCore(resourceManager) },
+                    CaveTileType.Core => new OpenTile(resourceManager),
                     _ => throw new ArgumentOutOfRangeException(nameof(caveTiles))
                 };
                 tiles[x, y] = new Tile(x, y, content);
@@ -88,6 +90,8 @@ public sealed class CaveWorldGenerator {
             }
         }
 
+        PlaceCoreContent(tiles, caveTiles, resourceManager, coreFront);
+
         DecorateSolidTiles(random, tiles, resourceManager);
 
         decorations = [
@@ -97,6 +101,93 @@ public sealed class CaveWorldGenerator {
 
         return (tiles, decorations);
     }
+
+    private static void PlaceCoreContent(Tile[,] tiles, CaveTile[,] caveTiles, ResourceManager resourceManager, EdgeSide coreFront) {
+        var members = new List<Tile>();
+        for (var y = 0; y < caveTiles.GetLength(1); y++) {
+            for (var x = 0; x < caveTiles.GetLength(0); x++) {
+                if (caveTiles[x, y].Type == CaveTileType.Core) {
+                    members.Add(tiles[x, y]);
+                }
+            }
+        }
+
+        var core = new TowerCore(resourceManager, members, coreFront);
+        ((OpenTile)members[0].Content).Content = core;
+        foreach (var member in members.Skip(1)) {
+            ((OpenTile)member.Content).Content = new ReferenceContent(core);
+        }
+    }
+
+    private static (Point[] Footprint, EdgeSide Front) PlaceCore(CaveTile[,] tiles, Random random, Int32 topFurthestCount = 10) {
+        var width = tiles.GetLength(0);
+        var height = tiles.GetLength(1);
+
+        var candidates = new List<(Point Anchor, Int32 W, Int32 H, EdgeSide Front)>();
+        foreach (var front in Enum.GetValues<EdgeSide>()) {
+            var alongX = front is EdgeSide.North or EdgeSide.South;
+            var w = alongX ? TowerCore.Length : TowerCore.Thickness;
+            var h = alongX ? TowerCore.Thickness : TowerCore.Length;
+            for (var x = 1; x + w <= width - 1; x++) {
+                for (var y = 1; y + h <= height - 1; y++) {
+                    var distances = new Dictionary<EdgeSide, Int32> {
+                        [EdgeSide.North] = y,
+                        [EdgeSide.South] = height - 1 - (y + h - 1),
+                        [EdgeSide.West] = x,
+                        [EdgeSide.East] = width - 1 - (x + w - 1)
+                    };
+                    var (fdx, fdy) = FrontDirection(front);
+                    var frontY = y + (fdy > 0 ? h : -1);
+                    var frontX = x + (fdx > 0 ? w : -1);
+                    var frontInside = alongX ? frontY >= 1 && frontY <= height - 2 : frontX >= 1 && frontX <= width - 2;
+                    if (frontInside && distances.MinBy(d => d.Value).Key == (EdgeSide)(((Int32)front + 2) % 4)) {
+                        candidates.Add((new Point(x, y), w, h, front));
+                    }
+                }
+            }
+        }
+
+        var furthest = candidates
+            .OrderByDescending(c => tiles[c.Anchor.X, c.Anchor.Y].DistanceFromEntrance)
+            .Take(topFurthestCount)
+            .ToArray();
+        var pick = furthest[random.Next(furthest.Length)];
+
+        var footprint = new List<Point>();
+        for (var y = 0; y < pick.H; y++) {
+            for (var x = 0; x < pick.W; x++) {
+                var p = new Point(pick.Anchor.X + x, pick.Anchor.Y + y);
+                tiles[p.X, p.Y].Type = CaveTileType.Core;
+                tiles[p.X, p.Y].Weight = 0;
+                footprint.Add(p);
+            }
+        }
+        var (fx, fy) = FrontDirection(pick.Front);
+        Point[] directions = [new(0, -1), new(1, 0), new(0, 1), new(-1, 0)];
+        foreach (var p in footprint) {
+            foreach (var d in directions) {
+                var n = new Point(p.X + d.X, p.Y + d.Y);
+                if (footprint.Contains(n) || n.X < 0 || n.Y < 0 || n.X >= width || n.Y >= height) {
+                    continue;
+                }
+                if (d.X == fx && d.Y == fy) {
+                    tiles[n.X, n.Y].Type = CaveTileType.Open;
+                    tiles[n.X, n.Y].Weight = 0;
+                }
+                else {
+                    tiles[n.X, n.Y].Protected = true;
+                }
+            }
+        }
+        return ([.. footprint], pick.Front);
+    }
+
+    private static (Int32 X, Int32 Y) FrontDirection(EdgeSide front) => front switch {
+        EdgeSide.North => (0, -1),
+        EdgeSide.East => (1, 0),
+        EdgeSide.South => (0, 1),
+        _ => (-1, 0)
+    };
 
     private static void DecorateSolidTiles(Random random, Tile[,] tiles, ResourceManager resourceManager) {
         var width = tiles.GetLength(0);
@@ -216,11 +307,13 @@ public sealed class CaveWorldGenerator {
         var entranceCount = Math.Min(2, totalBorderTiles);
 
         var entrances = new Collection<Point>();
-        var reserved = new HashSet<Int32>();
-        var picked = new HashSet<Int32>();
+        var picked = new HashSet<Int32> { 0 };
+        tiles[0, 0].Type = CaveTileType.Entrance;
+        entrances.Add(new(0, 0));
         while (picked.Count < entranceCount) {
             var idx = random.Next(totalBorderTiles);
-            if (picked.Contains(idx - 1) || picked.Contains(idx + 1) || !picked.Add(idx)) {
+            if (picked.Contains(idx - 1) || picked.Contains(idx + 1) || picked.Contains((idx + 1) % totalBorderTiles)
+                || picked.Contains((idx - 1 + totalBorderTiles) % totalBorderTiles) || !picked.Add(idx)) {
                 continue;
             }
             var position = BorderIndexToPosition(idx, size);
@@ -242,7 +335,7 @@ public sealed class CaveWorldGenerator {
         };
     }
 
-    private Point[] BFSScoreAndDistance(CaveTile[,] tiles, Point[] entrances, Random random, Int32 topFurthestCount = 10) {
+    private void BFSScoreAndDistance(CaveTile[,] tiles, Point[] entrances, Random random) {
         var width = tiles.GetLength(0);
         var height = tiles.GetLength(1);
 
@@ -255,8 +348,6 @@ public sealed class CaveWorldGenerator {
             visited[entrance.X, entrance.Y] = true;
             queue.Enqueue(entrance);
         }
-
-        var furthest = new Queue<Point>(topFurthestCount + 1);
 
         Point[] directions = [new(1, 0), new(-1, 0), new(0, 1), new(0, -1)];
         while (queue.Count > 0) {
@@ -277,24 +368,13 @@ public sealed class CaveWorldGenerator {
                 tiles[nx, ny].Weight = nonBorder ? random.NextSingle() : 10f;
                 queue.Enqueue(new Point(nx, ny));
             }
-
-            var nonBorderTiles = current.X > 0 && current.X < width - 1 &&
-                                 current.Y > 0 && current.Y < height - 1;
-            if (nonBorderTiles) {
-                furthest.Enqueue(current);
-                if (furthest.Count > topFurthestCount) {
-                    furthest.Dequeue();
-                }
-            }
         }
-
-        return [.. furthest];
     }
 
     private void CaveOutRandomRooms(
         CaveTile[,] tiles,
         Random random,
-        Point core,
+        Point[] core,
         Int32 minRooms = 3,
         Int32 maxRooms = 6,
         Int32 minSize = 3,
@@ -321,7 +401,7 @@ public sealed class CaveWorldGenerator {
 
             for (var x = room.Left; x < room.Right; x++) {
                 for (var y = room.Top; y < room.Bottom; y++) {
-                    if (tiles[x, y].Type == CaveTileType.Solid) {
+                    if (tiles[x, y].Type == CaveTileType.Solid && !tiles[x, y].Protected) {
                         tiles[x, y].Type = CaveTileType.Open;
                         tiles[x, y].Weight = 0;
                     }
@@ -332,7 +412,7 @@ public sealed class CaveWorldGenerator {
         }
 
         foreach (var room in rooms) {
-            CarveOutMainPath([new Point(room.X + room.Width / 2, room.Y + room.Height / 2)], [core], tiles);
+            CarveOutMainPath([new Point(room.X + room.Width / 2, room.Y + room.Height / 2)], core, tiles);
         }
     }
 
@@ -393,7 +473,7 @@ public sealed class CaveWorldGenerator {
             foreach (var direction in directions) {
                 var nx = current.X + direction.X;
                 var ny = current.Y + direction.Y;
-                if (nx < 0 || ny < 0 || nx >= width || ny >= height || closed[nx, ny]) {
+                if (nx < 0 || ny < 0 || nx >= width || ny >= height || closed[nx, ny] || tiles[nx, ny].Protected) {
                     continue;
                 }
 

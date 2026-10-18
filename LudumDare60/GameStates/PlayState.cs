@@ -210,7 +210,7 @@ public sealed class PlayState(App app) : GameState {
         }
     }
     private void HandleBuildMenu() {
-        if (_buildMenu is null && _hoveredTile is { Content: OpenTile open } hovered) {
+        if (_buildMenu is null && _hoveredTile is { Content: OpenTile open } hovered && open.Content is not (TowerCore or ReferenceContent { Owner: TowerCore })) {
             if (IsMouseButtonPressed(MouseButton.Left)) {
                 _displayHint = false;
                 _buildMenu = new BuildMenu(app.World!, hovered, open, _hoveredEdgeIndex, app.Resources, _scrapIcon, () => _buildMenu = null);
@@ -269,7 +269,7 @@ public sealed class PlayState(App app) : GameState {
         _ssao.End();
 
         if (_towerCoreRef is { AlarmActive: true } && _towerCoreTile is { } coreTile) {
-            var screen = GetWorldToScreen(new Vector3(coreTile.X + 0.5f, 1.8f, coreTile.Y + 0.5f), _camera);
+            var screen = GetWorldToScreen(new Vector3(_towerCoreRef.Centre.X, 1.8f, _towerCoreRef.Centre.Y), _camera);
             var scale = 1f + 0.25f * MathF.Sin((Single)GetTime() * 8f);
             var width = _warningIcon.Texture.Width * scale;
             var height = _warningIcon.Texture.Height * scale;

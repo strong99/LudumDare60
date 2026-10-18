@@ -33,7 +33,7 @@ public sealed class ExploreBehaviour(World world, Enemy enemy, Point? home = nul
 
     private void MarkOpen(Point tile) {
         var position = new Vector2(tile.X, tile.Y);
-        var isCore = (world.Tiles[tile.X, tile.Y].Content as OpenTile)?.Content is TowerCore;
+        var isCore = (world.Tiles[tile.X, tile.Y].Content as OpenTile)?.Content is TowerCore or ReferenceContent { Owner: TowerCore };
         if (isCore) {
             enemy.Memory.Store(position, MemoryTileType.Core);
         }

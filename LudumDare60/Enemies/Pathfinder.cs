@@ -75,7 +75,7 @@ public sealed class Pathfinder(World world) {
     }
 
     private Boolean IsObstacle(Point tile) =>
-        (world.Tiles[tile.X, tile.Y].Content as OpenTile)?.Content is { BlocksMovement: true } and Damageable;
+        (world.Tiles[tile.X, tile.Y].Content as OpenTile)?.Content is { BlocksMovement: true } and Damageable and not TowerCore;
 
     private List<Point>? Search(Point start, Func<Point, Boolean> isGoal, Boolean throughObstacles = false) {
         var previous = new Dictionary<Point, Point> { [start] = start };
@@ -102,7 +102,7 @@ public sealed class Pathfinder(World world) {
                     || previous.ContainsKey(next)
                     || open.Edges[(Int32)side] is Wall
                     || world.Tiles[next.X, next.Y].Content is not OpenTile nextOpen
-                    || (nextOpen.Content?.BlocksMovement == true && !(throughObstacles && IsObstacle(next)))) {
+                    || (nextOpen.Content?.BlocksMovement == true && !isGoal(next) && !(throughObstacles && IsObstacle(next)))) {
                     continue;
                 }
 

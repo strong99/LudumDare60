@@ -40,7 +40,7 @@ public sealed class World {
                 for (var y = 0; y < size; y++) {
                     var border = x == 0 || y == 0 || x == size - 1 || y == size - 1;
 
-                    TileContent content = border ? new SolidTile() : new OpenTile(resourceManager);
+                    TileContent content = border ? new SolidTile() { Top = resourceManager.GetOrLoadModel("Assets/Top.glb") } : new OpenTile(resourceManager);
                     if (border) {
                         if (toPlaceSpawners > 0) {
                             var lastChanceIndex = borderCount - toPlaceSpawners;
