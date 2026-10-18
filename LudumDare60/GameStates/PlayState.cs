@@ -59,6 +59,10 @@ public sealed class PlayState(App app) : GameState {
         else if (_towerCoreRef.HitPoints <= 0) {
             app.SetNextGameState(new GameOverState(app, false));
         }
+
+        if (_buildMenu is null && IsKeyPressed(KeyboardKey.Escape)) {
+            app.SetNextGameState(new MenuState(app));
+        }
     }
     private void HandleRotation() {
         const Single rotationSpeed = 1.5f;
