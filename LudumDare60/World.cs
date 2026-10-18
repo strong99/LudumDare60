@@ -11,6 +11,10 @@ public sealed class World {
     public Double Duration { get; }
     public Memory EnemyKnowledge { get; } = new();
 
+    public event Action<Enemy>? EnemyDied;
+
+    public void RaiseEnemyDied(Enemy enemy) => EnemyDied?.Invoke(enemy);
+
     public World(Int32 size, ResourceManager resourceManager, Tile[,]? tiles = null, IEnumerable<Decoration>? decorations =null) {
         Size = size;
         Tiles = tiles ?? new Tile[size, size];

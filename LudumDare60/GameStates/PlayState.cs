@@ -23,6 +23,11 @@ public sealed class PlayState(App app) : GameState {
     private Boolean _showSteamDebug = true;
     private ModelHandle _cityScape;
     private TextureHandle _warningIcon;
+    private TextureHandle _scrapIcon;
+    private readonly List<FloatingScrapLabel> _scrapLabels = [];
+    private const Int32 ScrapsPerKill = 10;
+    private const Single ScrapLabelDuration = 2f;
+    private const Single ScrapLabelRise = 1.5f;
     private Boolean _displayHint = true;
     private Label _displayHintLabel;
     private MusicGenerator<DramaticPlayMusicGeneratorStrategy>? _music;
@@ -57,6 +62,13 @@ public sealed class PlayState(App app) : GameState {
         _waveSpawner.Progress(deltaTime);
         foreach (var enemy in world.Enemies.ToList()) {
             enemy.Progress(deltaTime);
+        }
+        for (var i = _scrapLabels.Count - 1; i >= 0; i--) {
+            var label = _scrapLabels[i];
+            label.Age += (Single)deltaTime;
+            if (label.Age >= ScrapLabelDuration) {
+                _scrapLabels.RemoveAt(i);
+            }
         }
         _countDownCounter.Progress(deltaTime);
         _scrapCounter.Progress(deltaTime);
@@ -268,6 +280,8 @@ public sealed class PlayState(App app) : GameState {
             );
         }
 
+        DrawScrapLabels();
+
         if (_showSteamDebug) {
             DrawSteamDebug(world);
         }
@@ -285,6 +299,26 @@ public sealed class PlayState(App app) : GameState {
         _menuButton.Draw();
         _helpButton.Draw();
         //EndMode2D();
+    }
+
+    private void DrawScrapLabels() {
+        const Int32 fontSize = 20;
+        foreach (var label in _scrapLabels) {
+            var t = label.Age / ScrapLabelDuration;
+            var screen = GetWorldToScreen(label.Origin + new Vector3(0, ScrapLabelRise * t, 0), _camera);
+            var tint = new Color((Byte)255, (Byte)255, (Byte)255, (Byte)(255 * (1f - t)));
+            var text = $"+{label.Amount}";
+            var textWidth = MeasureText(text, fontSize);
+            var x = (Int32)screen.X - (textWidth + _scrapIcon.Texture.Width) / 2;
+            DrawText(text, x, (Int32)screen.Y - fontSize / 2, fontSize, tint);
+            DrawTexture(_scrapIcon, x + textWidth, (Int32)screen.Y - _scrapIcon.Texture.Height / 2, tint);
+        }
+    }
+
+    private sealed class FloatingScrapLabel(Vector3 origin, Int32 amount) {
+        public Vector3 Origin { get; } = origin;
+        public Int32 Amount { get; } = amount;
+        public Single Age { get; set; }
     }
 
     private void DrawSteamDebug(World world) {
@@ -343,6 +377,7 @@ public sealed class PlayState(App app) : GameState {
 
         _cityScape = app.Resources.GetOrLoadModel("Assets/CityScape.glb");
         _warningIcon = app.Resources.GetOrLoadTexture("Assets/IconWarning.png");
+        _scrapIcon = app.Resources.GetOrLoadTexture("Assets/IconScraps.png");
 
         _towerCoreTile = world.Tiles
             .Cast<Tile>()
@@ -356,8 +391,15 @@ public sealed class PlayState(App app) : GameState {
 
         _music = new(new DramaticPlayMusicGeneratorStrategy());
         _music.Play();
+
+        world.EnemyDied += OnEnemyDied;
+    }
+    private void OnEnemyDied(Enemy enemy) {
+        _scrapLabels.Add(new FloatingScrapLabel(new Vector3(enemy.Position.X, 1f, enemy.Position.Y), ScrapsPerKill));
     }
     public void Deactivate() {
+        app.World!.EnemyDied -= OnEnemyDied;
+
         app.Resources.ReleaseTexture(_displayHintLabel.Texture);
         app.Resources.ReleaseTexture(_countDownCounter.Texture);
         app.Resources.ReleaseTexture(_countDownCounter.Icon);
@@ -373,6 +415,8 @@ public sealed class PlayState(App app) : GameState {
 
         app.Resources.ReleaseModel(_cityScape);
         app.Resources.ReleaseTexture(_warningIcon);
+        app.Resources.ReleaseTexture(_scrapIcon);
+        _scrapLabels.Clear();
 
         _ssao.Dispose();
         _music?.Dispose();
