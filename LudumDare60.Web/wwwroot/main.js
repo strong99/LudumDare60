@@ -1,6 +1,17 @@
 import { dotnet } from './_framework/dotnet.js'
 
-globalThis.getBaseAddress = function () { return location.origin + '/'; };
+globalThis.getBaseAddress = function () { return document.baseURI; };
+
+globalThis.getViewportWidth = function () { return Math.max(1, Math.floor(window.innerWidth)); };
+globalThis.getViewportHeight = function () { return Math.max(1, Math.floor(window.innerHeight)); };
+
+globalThis.toggleBrowserFullscreen = function () {
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
+    } else {
+        document.documentElement.requestFullscreen().catch(e => console.warn('Fullscreen refused:', e));
+    }
+};
 
 const { getAssemblyExports, getConfig, runMain } = await dotnet
     .withDiagnosticTracing(false)

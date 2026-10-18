@@ -10,6 +10,7 @@ public static partial class WebApp {
     public static async Task Main(string[] args) {
         ExtractAssets();
 
+        App.FullscreenOverride = ToggleBrowserFullscreen;
         _app.Init();
 
         _previousTime = GetTime();
@@ -39,8 +40,27 @@ public static partial class WebApp {
         }
     }
 
+    [JSImport("globalThis.toggleBrowserFullscreen")]
+    private static partial void ToggleBrowserFullscreen();
+
+    [JSImport("globalThis.getViewportWidth")]
+    private static partial Int32 GetViewportWidth();
+
+    [JSImport("globalThis.getViewportHeight")]
+    private static partial Int32 GetViewportHeight();
+
+    private static void SyncViewportSize() {
+        var width = GetViewportWidth();
+        var height = GetViewportHeight();
+        if (width != GetScreenWidth() || height != GetScreenHeight()) {
+            SetWindowSize(width, height);
+        }
+    }
+
     [JSExport]
     public static void UpdateFrame() {
+        SyncViewportSize();
+
         var currentTime = GetTime();
         var deltaTime = currentTime - _previousTime;
         _previousTime = currentTime;

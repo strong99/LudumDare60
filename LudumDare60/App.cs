@@ -14,6 +14,15 @@ public sealed class App : IDisposable {
     public void SetNextGameState(GameState state) {
         _nextGameState = state;
     }
+
+    public static Action? FullscreenOverride { get; set; }
+    public void ToggleFullscreenWindow() {
+        if (FullscreenOverride is not null) {
+            FullscreenOverride();
+        } else {
+            ToggleFullscreen();
+        }
+    }
     public void Init() {
         var screenWidth = 1280;
         var screenHeight = 720;
@@ -51,7 +60,7 @@ public sealed class App : IDisposable {
             previousTime = currentTime;
 
             if (IsKeyPressed(KeyboardKey.F11)) {
-                ToggleFullscreen();
+                ToggleFullscreenWindow();
             }
 
             Tick(deltaTime);

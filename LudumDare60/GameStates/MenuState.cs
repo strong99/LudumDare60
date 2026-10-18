@@ -15,7 +15,7 @@ public sealed class MenuState(App app) : GameState {
     private TextButton _newGame;
     private TextButton? _continueGame;
     private TextButton _fullScreen;
-    private TextButton _exit;
+    private TextButton? _exit;
     private Int32 _layoutWidth;
     private ModelHandle _towerModel;
     private ModelHandle _cityModel;
@@ -43,7 +43,7 @@ public sealed class MenuState(App app) : GameState {
         _newGame.Progress(deltaTime);
         _continueGame?.Progress(deltaTime);
         _fullScreen?.Progress(deltaTime);
-        _exit.Progress(deltaTime);
+        _exit?.Progress(deltaTime);
 
         _camera.Position = new Vector3(MathF.Sin((Single)_time / 10f) * 5f, 4.5f, MathF.Cos((Single)_time / 10f) * 5f);
     }
@@ -71,7 +71,7 @@ public sealed class MenuState(App app) : GameState {
         _newGame.Draw();
         _continueGame?.Draw();
         _fullScreen?.Draw();
-        _exit.Draw();
+        _exit?.Draw();
     }
     public void Activate() {
         _camera = new Camera3D {
@@ -111,16 +111,18 @@ public sealed class MenuState(App app) : GameState {
                 ClickSound = clickSound()
             };
         }
-        _fullScreen = new TextButton("fullscreen", new(centreX, y += buttonHeight), buttonTexture, _ => ToggleFullscreen()) {
+        _fullScreen = new TextButton("fullscreen", new(centreX, y += buttonHeight), buttonTexture, _ => app.ToggleFullscreenWindow()) {
             FontSize = _fontSize,
             HoverSound = hoverSound(),
             ClickSound = clickSound()
         };
-        _exit = new TextButton("exit", new(centreX, y += buttonHeight), buttonTexture, _ => app.Exit()) {
-            FontSize = _fontSize,
-            HoverSound = hoverSound(),
-            ClickSound = clickSound()
-        };
+        if (App.FullscreenOverride is null) {
+            _exit = new TextButton("exit", new(centreX, y += buttonHeight), buttonTexture, _ => app.Exit()) {
+                FontSize = _fontSize,
+                HoverSound = hoverSound(),
+                ClickSound = clickSound()
+            };
+        }
 
         _music = new(new MenuMusicGeneratorStrategy());
         _music.Play();
@@ -133,11 +135,9 @@ public sealed class MenuState(App app) : GameState {
 
         _label.Position = new(centreX, y += buttonHeight);
         _newGame.Position = new(centreX, y += buttonHeight);
-        if (_continueGame is not null) {
-            _continueGame.Position = new(centreX, y += buttonHeight);
-        }
+        _continueGame?.Position = new(centreX, y += buttonHeight);
         _fullScreen.Position = new(centreX, y += buttonHeight);
-        _exit.Position = new(centreX, y += buttonHeight);
+        _exit?.Position = new(centreX, y += buttonHeight);
     }
     public void Deactivate() {
         app.Resources.ReleaseSound(_newGame.HoverSound!.Value);
@@ -145,14 +145,15 @@ public sealed class MenuState(App app) : GameState {
         app.Resources.ReleaseSound(_fullScreen.HoverSound!.Value);
         app.Resources.ReleaseSound(_fullScreen.ClickSound!.Value);
         if (_continueGame is { } continueGame) {
-            app.Resources.ReleaseSound(_continueGame.HoverSound!.Value);
-            app.Resources.ReleaseSound(_continueGame.ClickSound!.Value);
+            app.Resources.ReleaseSound(continueGame.HoverSound!.Value);
+            app.Resources.ReleaseSound(continueGame.ClickSound!.Value);
         }
-        app.Resources.ReleaseSound(_exit.HoverSound!.Value);
-        app.Resources.ReleaseSound(_exit.ClickSound!.Value);
+        if (_exit is { } exit) {
+            app.Resources.ReleaseSound(exit.HoverSound!.Value);
+            app.Resources.ReleaseSound(exit.ClickSound!.Value);
+            app.Resources.ReleaseTexture(exit.Texture);
+        }
         
-        app.Resources.ReleaseTexture(_exit.Texture);
-
         app.Resources.ReleaseModel(_cityModel);
         app.Resources.ReleaseModel(_zeppelinModel);
 
