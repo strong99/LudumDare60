@@ -4,6 +4,9 @@ using static Raylib_cs.Raylib;
 namespace LudumDare60.UI;
 
 public sealed class ScrapCounter(Func<Int32> scraps, TextureHandle texture, TextureHandle icon) : UIElement {
+    public TextureHandle Texture { get; } = texture;
+    public TextureHandle Icon { get; } = icon;
+
     public void Progress(Double deltaTime) {
 
     }
@@ -14,8 +17,8 @@ public sealed class ScrapCounter(Func<Int32> scraps, TextureHandle texture, Text
 
 
         var y = 20;
-        DrawTexture(texture, -180, y - 15, Color.Black);
-        DrawTexture(icon, 0, y - 7, Color.White);
+        DrawTexture(Texture, -180, y - 15, Color.Black);
+        DrawTexture(Icon, 0, y - 7, Color.White);
         DrawText(text, 40, y, fontSize, Color.White);
     }
 }

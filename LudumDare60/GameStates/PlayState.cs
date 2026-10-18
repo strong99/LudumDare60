@@ -19,6 +19,8 @@ public sealed class PlayState(App app) : GameState {
     private TowerCore _towerCoreRef;
     private Boolean _showSteamDebug = true;
     private ModelHandle _cityScape;
+    private Boolean _displayHint = true;
+    private Label _displayHintLabel;
     private MusicGenerator<DramaticPlayMusicGeneratorStrategy>? _music;
     public void Progress(Double deltaTime) {
         _music?.Progress();
@@ -190,6 +192,7 @@ public sealed class PlayState(App app) : GameState {
     private void HandleBuildMenu() {
         if (_buildMenu is null && _hoveredTile is { Content: OpenTile open } hovered) {
             if (IsMouseButtonPressed(MouseButton.Left)) {
+                _displayHint = false;
                 _buildMenu = new BuildMenu(app.World!, hovered, open, _hoveredEdgeIndex, app.Resources, () => _buildMenu = null);
             }
         }
@@ -305,9 +308,9 @@ public sealed class PlayState(App app) : GameState {
         };
         _ssao = new SsaoPass(_camera.FovY);
         _waveSpawner = new WaveSpawner(world);
-        var labelBackgroundTexture = app.Resources.GetOrLoadTexture("Assets/Button.png");
-        _countDownCounter = new(3600, labelBackgroundTexture, app.Resources.GetOrLoadTexture("Assets/IconClock.png"));
-        _scrapCounter = new(() => app.World.Scraps, labelBackgroundTexture, app.Resources.GetOrLoadTexture("Assets/IconScraps.png"));
+        Func<TextureHandle> labelBackgroundTexture = ()=>app.Resources.GetOrLoadTexture("Assets/Button.png");
+        _countDownCounter = new(3600, labelBackgroundTexture(), app.Resources.GetOrLoadTexture("Assets/IconClock.png"));
+        _scrapCounter = new(() => app.World.Scraps, labelBackgroundTexture(), app.Resources.GetOrLoadTexture("Assets/IconScraps.png"));
 
         _cityScape = app.Resources.GetOrLoadModel("Assets/CityScape.glb");
 
@@ -315,12 +318,24 @@ public sealed class PlayState(App app) : GameState {
             .Cast<Tile>()
             .Select(t => (t.Content as OpenTile)?.Content as TowerCore)
             .FirstOrDefault(c => c is not null);
-        _towerCoreCounter = new(() => (Int32)MathF.Ceiling(_towerCoreRef?.HitPoints ?? 0), labelBackgroundTexture, app.Resources.GetOrLoadTexture("Assets/IconDamage.png"));
+        _towerCoreCounter = new(() => (Int32)MathF.Ceiling(_towerCoreRef?.HitPoints ?? 0), labelBackgroundTexture(), app.Resources.GetOrLoadTexture("Assets/IconDamage.png"));
+
+        _displayHintLabel = new Label("Defend the Tower Core\nclick a tile to get started.", new(100, 100), app.Resources.GetOrLoadTexture("Assets/Button.png"));
 
         _music = new(new DramaticPlayMusicGeneratorStrategy());
         _music.Play();
     }
     public void Deactivate() {
+        app.Resources.ReleaseTexture(_displayHintLabel.Texture);
+        app.Resources.ReleaseTexture(_countDownCounter.Texture);
+        app.Resources.ReleaseTexture(_countDownCounter.Icon);
+        app.Resources.ReleaseTexture(_scrapCounter.Texture);
+        app.Resources.ReleaseTexture(_scrapCounter.Icon);
+        app.Resources.ReleaseTexture(_towerCoreCounter.Texture);
+        app.Resources.ReleaseTexture(_towerCoreCounter.Icon);
+
+        app.Resources.ReleaseModel(_cityScape);
+
         _ssao.Dispose();
         _music?.Dispose();
         _music = null;

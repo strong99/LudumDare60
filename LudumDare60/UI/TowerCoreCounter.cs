@@ -4,6 +4,9 @@ using static Raylib_cs.Raylib;
 namespace LudumDare60.UI;
 
 public sealed class TowerCoreCounter(Func<Int32> towerCoreHitpoints, TextureHandle texture, TextureHandle icon) : UIElement {
+    public TextureHandle Texture { get; } = texture;
+    public TextureHandle Icon { get; } = icon;
+
     public void Progress(Double deltaTime) {
 
     }
@@ -13,8 +16,8 @@ public sealed class TowerCoreCounter(Func<Int32> towerCoreHitpoints, TextureHand
         var width = GetScreenWidth() - MeasureText(text, fontSize);
 
         var y = 70;
-        DrawTexture(texture, -180, y - 15, Color.Black);
-        DrawTexture(icon, 0, y - 7, Color.White);
+        DrawTexture(Texture, -180, y - 15, Color.Black);
+        DrawTexture(Icon, 0, y - 7, Color.White);
         DrawText(text, 40, y, fontSize, Color.White);
     }
 }
