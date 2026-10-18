@@ -11,7 +11,7 @@ public sealed unsafe class Crusher : Trap, MultiTileContent {
     private const Single _extendSpeed = 2.0f;
     private const Single _maxExtension = 1.0f;
     private const Single _triggerDistance = 1f;
-    private const Single _revolutionsPerSecond = 0.5f;
+    private const Single _speed = 0.5f;
     private const Int32 _damage = 5;
     private const Single _steamCost = 1.5f;
 
@@ -27,7 +27,7 @@ public sealed unsafe class Crusher : Trap, MultiTileContent {
 
     public SteamStore Store { get; } = new(2f);
 
-    private Double _playDuration;
+    private Single _gearAngle;
     private Single _extension = 0;
     private Boolean _damageApplied = false;
 
@@ -65,15 +65,15 @@ public sealed unsafe class Crusher : Trap, MultiTileContent {
             _hitThisStroke.Clear();
         }
 
-        _playDuration += deltaTime;
+        var direction = _extension > 0 ? -1f : 1f;
+        _gearAngle = _gearAngle + direction * (Single)deltaTime * _speed;
     }
 
     private Boolean IsOnHitArea(Vector2 p) =>
         p.X >= _tile.X && p.X < _tile.X + 1 && p.Y >= _tile.Y && p.Y < _tile.Y + 1;
 
     public void Draw(Vector3 tileCentre) {
-        var angle = (Single)(_playDuration * _revolutionsPerSecond % 1.0 * MathF.Tau);
-        Draw(_model, tileCentre, _bodySide, _extension, angle, Color.White);
+        Draw(_model, tileCentre, _bodySide, _extension, _gearAngle, Color.White);
     }
 
     public static void Draw(Model model, Vector3 tileCentre, EdgeSide bodySide, Single extension, Single gearAngle, Color tint) {
@@ -90,7 +90,8 @@ public sealed unsafe class Crusher : Trap, MultiTileContent {
         var gearTransform = Matrix4x4.CreateTranslation(-gearPivot)
             * Matrix4x4.CreateRotationZ(gearAngle)
             * Matrix4x4.CreateTranslation(gearPivot)
-            * crusherTransform;
+            * rotation
+            * Matrix4x4.CreateTranslation(tileCentre);
 
         RayLibHelper.DrawMeshWithTint(model, _crusherMesh, crusherTransform, tint);
         RayLibHelper.DrawMeshWithTint(model, _gearMesh, gearTransform, tint);
