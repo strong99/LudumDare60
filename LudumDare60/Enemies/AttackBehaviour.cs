@@ -138,6 +138,7 @@ public sealed class AttackBehaviour(World world, Enemy enemy, Point home) : Enem
         target.HitPoints = MathF.Max(0, target.HitPoints - _damagePerSecond * (Single)deltaTime);
         if (target.HitPoints <= 0) {
             world.ClearContent(world.Tiles[obstacle.X, obstacle.Y]);
+            world.PlayExplosion();
             FinishObstacle();
         }
     }

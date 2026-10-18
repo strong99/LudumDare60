@@ -15,7 +15,16 @@ public sealed class World {
 
     public void RaiseEnemyDied(Enemy enemy) => EnemyDied?.Invoke(enemy);
 
+    private readonly ResourceManager _resourceManager;
+    private SoundHandle? _explosionSound;
+
+    public void PlayExplosion() {
+        _explosionSound ??= _resourceManager.GetOrLoadSound("Assets/Explosion.wav");
+        Raylib_cs.Raylib.PlaySound(_explosionSound.Value);
+    }
+
     public World(Int32 size, ResourceManager resourceManager, Tile[,]? tiles = null, IEnumerable<Decoration>? decorations =null) {
+        _resourceManager = resourceManager;
         Size = size;
         Tiles = tiles ?? new Tile[size, size];
         Decorations = decorations is null ? [] : [..decorations];
