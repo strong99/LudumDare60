@@ -31,6 +31,9 @@ public sealed class PlayState(App app) : GameState {
         HandleBuildMenu();
 
         SteamStore.NextFrame();
+        foreach (var decoration in world.Decorations) {
+            decoration.Progress(deltaTime);
+        }
         foreach (var tile in world.Tiles) {
             tile.Progress(deltaTime);
         }
@@ -141,6 +144,9 @@ public sealed class PlayState(App app) : GameState {
 
         _buildMenu?.ApplyPreviewState();
 
+        foreach (var decoration in world.Decorations) {
+            decoration.Draw();
+        }
         foreach (var tile in world.Tiles) {
             tile.Draw();
         }

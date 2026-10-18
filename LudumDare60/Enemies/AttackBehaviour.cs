@@ -102,6 +102,7 @@ public sealed class AttackBehaviour(World world, Enemy enemy, Point home) : Enem
         };
         Face(enemy.Position + offset);
 
+        enemy.Attack();
         wall.HitPoints = MathF.Max(0, wall.HitPoints - _damagePerSecond * (Single)deltaTime);
         if (wall.HitPoints <= 0) {
             world.SetEdge(world.Tiles[wallTile.X, wallTile.Y], side, null);
@@ -138,6 +139,7 @@ public sealed class AttackBehaviour(World world, Enemy enemy, Point home) : Enem
         }
 
         Face(new Vector2(core.X + 0.5f, core.Y + 0.5f));
+        enemy.Attack();
         target.HitPoints = MathF.Max(0, target.HitPoints - _damagePerSecond * (Single)deltaTime);
     }
 }

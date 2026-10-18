@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Drawing;
+using System.Numerics;
 
 namespace LudumDare60.Generators;
 
@@ -16,8 +17,8 @@ public sealed class CaveWorldGenerator {
         public Single Weight { get; set; } = 0;
         public CaveTileType Type { get; set; } = CaveTileType.Solid;
     }
-    public Tile[,] Generate(Int32 size, ResourceManager resourceManager, Int32 seed = -1) {
-        var random = seed != -1 ? new Random() : new Random(seed);
+    public (Tile[,] Tiles, Collection<Decoration> decorations) Generate(Int32 size, ResourceManager resourceManager, Int32 seed = -1) {
+        var random = seed == -1 ? new Random() : new Random(seed);
 
         var tiles = InstantiateTileArray(size);
 
@@ -34,10 +35,11 @@ public sealed class CaveWorldGenerator {
         return ConvertToTiles(tiles, resourceManager);
     }
 
-    private static Tile[,] ConvertToTiles(CaveTile[,] caveTiles, ResourceManager resourceManager) {
+    private static (Tile[,] Tiles, Collection<Decoration> Decorations) ConvertToTiles(CaveTile[,] caveTiles, ResourceManager resourceManager) {
         var width = caveTiles.GetLength(0);
         var height = caveTiles.GetLength(1);
 
+        var decorations = new Collection<Decoration>();
         var tiles = new Tile[width, height];
         for (var x = 0; x < width; x++) {
             for (var y = 0; y < height; y++) {
@@ -49,9 +51,40 @@ public sealed class CaveWorldGenerator {
                     _ => throw new ArgumentOutOfRangeException(nameof(caveTiles))
                 };
                 tiles[x, y] = new Tile(x, y, content);
+
+                if (content is OpenTile { Content: TowerEntrance }) {
+                    var dx = 0;
+                    var dy = 0;
+                    var r = 0f;
+
+                    if (x == 0) {
+                        dx = -1;
+                        r = 180f;
+                    }
+                    else if (x == width - 1) {
+                        dx = 1;
+                        r = 0;
+                    }
+                    else if (y == 0) {
+                        dy = -1;
+                        r = 90;
+                    }
+                    else {
+                        dy = 1;
+                        r = -90;
+                    }
+
+                    Vector3 position = new (x + 0.5f + dx, 0, y + 0.5f + dy);
+                    Decoration decoration = new StaticDecoration(resourceManager.GetOrLoadModel("Assets/ElevatorShaft.glb"), position, r);
+                    decorations.Add(decoration);
+
+                    position = new Vector3(x + 0.5f + dx, 0, y + 0.5f + dy);
+                    decoration = new ElevatorDecoration(resourceManager.GetOrLoadModel("Assets/Elevator.glb"), position, r);
+                    decorations.Add(decoration);
+                }
             }
         }
-        return tiles;
+        return (tiles, decorations);
     }
 
     private CaveTile[,] InstantiateTileArray(Int32 size) {
@@ -72,10 +105,11 @@ public sealed class CaveWorldGenerator {
         var entranceCount = Math.Min(2, totalBorderTiles);
 
         var entrances = new Collection<Point>();
+        var reserved = new HashSet<Int32>();
         var picked = new HashSet<Int32>();
         while (picked.Count < entranceCount) {
             var idx = random.Next(totalBorderTiles);
-            if (!picked.Add(idx)) {
+            if (picked.Contains(idx - 1) || picked.Contains(idx + 1) || !picked.Add(idx)) {
                 continue;
             }
             var position = BorderIndexToPosition(idx, size);
@@ -147,12 +181,12 @@ public sealed class CaveWorldGenerator {
     }
 
     private void CaveOutRandomRooms(
-        CaveTile[,] tiles, 
-        Random random, 
+        CaveTile[,] tiles,
+        Random random,
         Point core,
-        Int32 minRooms = 3, 
-        Int32 maxRooms = 6, 
-        Int32 minSize = 3, 
+        Int32 minRooms = 3,
+        Int32 maxRooms = 6,
+        Int32 minSize = 3,
         Int32 maxSize = 5
     ) {
         var size = tiles.GetLength(0);

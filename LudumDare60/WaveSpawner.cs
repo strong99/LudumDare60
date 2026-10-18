@@ -62,6 +62,7 @@ public sealed class WaveSpawner(World world) {
             Kind = _goblinExplorer,
             HitPoints = _goblinExplorer.MaxHitPoints,
             Memory = world.EnemyKnowledge.Clone(),
+            Weapon = Random.Shared.Next(2) == 0 ? Weapon.Sword : Weapon.Mace,
             Position = new Vector2(entrance.X + 0.5f, entrance.Y + 0.5f),
         };
         enemy.Behaviour = new ExploreBehaviour(world, enemy);

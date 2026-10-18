@@ -5,14 +5,16 @@ namespace LudumDare60;
 public sealed class World {
     public Int32 Size { get; }
     public Tile[,] Tiles { get; }
+    public Collection<Decoration> Decorations { get; }
     public Collection<Enemy> Enemies { get; } = [];
     public Int32 Scraps { get; private set; } = 1000;
     public Double Duration { get; }
     public Memory EnemyKnowledge { get; } = new();
 
-    public World(Int32 size, ResourceManager resourceManager, Tile[,]? tiles = null) {
+    public World(Int32 size, ResourceManager resourceManager, Tile[,]? tiles = null, IEnumerable<Decoration>? decorations =null) {
         Size = size;
         Tiles = tiles ?? new Tile[size, size];
+        Decorations = decorations is null ? [] : [..decorations];
 
         if (tiles is null) {
             var toPlaceSpawners = 2;
