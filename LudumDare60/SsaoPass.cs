@@ -80,6 +80,12 @@ public sealed class SsaoPass(Single fovY) : IDisposable {
             }
 
             float ao = 1.0 - uStrength * occlusion / float(samples);
+
+            vec3 lightDir = normalize(vec3(0.45, 0.8, 0.4));
+            float halfLambert = dot(normal, lightDir) * 0.5 + 0.5;
+            float shade = 0.75 + 0.25 * halfLambert * halfLambert;
+
+            ao *= shade;
             finalColor = vec4(ao, ao, ao, 1.0);
         }
         """;
