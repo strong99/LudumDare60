@@ -1,4 +1,5 @@
-﻿using Raylib_cs;
+﻿using LudumDare60.Generators;
+using Raylib_cs;
 using System.Numerics;
 using static Raylib_cs.Raylib;
 
@@ -17,7 +18,10 @@ public sealed class PlayState(App app) : GameState {
     private EdgeSide _hoveredEdgeIndex = EdgeSide.North;
     private TowerCore _towerCore;
     private Boolean _showSteamDebug = true;
+    private MusicGenerator<DramaticPlayMusicGeneratorStrategy>? _music;
     public void Progress(Double deltaTime) {
+        _music?.Progress();
+
         var world = app.World!;
 
         if (IsKeyPressed(KeyboardKey.F3)) {
@@ -248,8 +252,13 @@ public sealed class PlayState(App app) : GameState {
             .Select(t => (t.Content as OpenTile)?.Content as TowerCore)
             .FirstOrDefault(c => c is not null);
         _towerCoreCounter = new(() => (Int32)MathF.Ceiling(_towerCore?.HitPoints ?? 0));
+
+        _music = new(new DramaticPlayMusicGeneratorStrategy());
+        _music.Play();
     }
     public void Deactivate() {
         _ssao.Dispose();
+        _music?.Dispose();
+        _music = null;
     }
 }

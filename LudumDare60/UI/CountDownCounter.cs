@@ -7,7 +7,7 @@ public sealed class CountDownCounter(Int32 duration) : UIElement {
     public Int32 Duration { get; set; } = duration;
     private Double _duration;
     public Boolean TimeUp { get => Duration < _duration; }
-    public void Progress(double deltaTime) {
+    public void Progress(Double deltaTime) {
         _duration += deltaTime;
     }
     public void Draw() {

@@ -12,6 +12,8 @@ public sealed class WaveSpawner(World world) {
     private const Int32 _waveGrowth = 2;
 
     private static readonly EnemyKind _goblinExplorer = new("Explorer", 10, 1.5f, 0f, 0f);
+    private static readonly EnemyKind _goblinEngineerr = new("Engineer", 5, 1.25f, 1f, 0.8f);
+    private static readonly EnemyKind _goblinFigher = new("Fighter", 20, 1f, 0.2f, 0.2f);
     private readonly Random _random = new();
 
     private Double _waveTimer = _firstWaveDelay;

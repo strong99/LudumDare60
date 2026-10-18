@@ -1,4 +1,6 @@
-﻿using static Raylib_cs.Raylib;
+﻿using LudumDare60.Generators;
+using Raylib_cs;
+using static Raylib_cs.Raylib;
 
 namespace LudumDare60.GameStates;
 
@@ -10,7 +12,9 @@ public sealed class MenuState(App app) : GameState {
     private TextButton? _continueGame;
     private TextButton _exit;
     private Int32 _layoutWidth;
+    private MusicGenerator<MenuMusicGeneratorStrategy>? _music;
     public void Progress(Double deltaTime) {
+        _music?.Progress();
         if (GetScreenWidth() != _layoutWidth) {
             UpdateOnResize();
         }
@@ -43,6 +47,9 @@ public sealed class MenuState(App app) : GameState {
         _exit = new TextButton("exit", new(centreX, y += buttonHeight), _ => app.Exit()) {
             FontSize = _fontSize
         };
+
+        _music = new(new MenuMusicGeneratorStrategy());
+        _music.Play();
     }
     private void UpdateOnResize() {
         var width = _layoutWidth = GetScreenWidth();
@@ -57,6 +64,7 @@ public sealed class MenuState(App app) : GameState {
         _exit.Position = new(centreX, y += buttonHeight);
     }
     public void Deactivate() {
-
+        _music?.Dispose();
+        _music = null;
     }
 }

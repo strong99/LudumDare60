@@ -81,7 +81,7 @@ public sealed class BuildMenu : UIElement {
     private Single SectorSize => 360f / _options.Length;
     private Single SectorStart(Int32 index) => -90f - SectorSize / 2 + index * SectorSize;
 
-    public void Progress(double deltaTime) {
+    public void Progress(Double deltaTime) {
         var offset = GetMousePosition() - _centre;
         var distance = offset.Length();
         _hovered = -1;

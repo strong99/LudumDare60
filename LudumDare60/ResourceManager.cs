@@ -12,6 +12,9 @@ public readonly record struct ModelHandle(String Key, Model Model) {
 public readonly record struct ModelAnimationHandle(String Key, ModelAnimation[] Animations) {
     public static implicit operator ModelAnimation[](ModelAnimationHandle h) => h.Animations;
 }
+public readonly record struct SoundHandle(String Key, Sound Sound) {
+    public static implicit operator Sound(SoundHandle h) => h.Sound;
+}
 
 public sealed class ResourceManager {
     class ReferenceCount<TResource>(TResource resource, Int32 count) {
@@ -112,6 +115,36 @@ public sealed class ResourceManager {
         if (reference.Count == 0) {
             UnloadModelAnimations(reference.Resource);
             _animationReferences.Remove(model.Key);
+        }
+    }
+
+    private readonly Dictionary<String, ReferenceCount<Sound>> _soundReferences = [];
+    private readonly Dictionary<String, Wave> _waveReferences = [];
+    public SoundHandle GetOrLoadSound(String fileName) {
+        var fullFileName = Path.GetFullPath(fileName);
+        if (_soundReferences.TryGetValue(fullFileName, out var reference)) {
+            return new(fullFileName, reference.Resource);
+        }
+
+        var sound = LoadSound(fullFileName);
+        _soundReferences.Add(fullFileName, new(sound, 1));
+
+        return new(fullFileName, sound);
+    }
+    public void ReleaseSound(SoundHandle model) {
+        if (!_soundReferences.TryGetValue(model.Key, out var reference)) {
+            throw new Exception("Does not exist");
+        }
+
+        reference.Release();
+
+        if (reference.Count == 0) {
+            UnloadSound(reference.Resource);
+            _soundReferences.Remove(model.Key);
+
+            if (_waveReferences.TryGetValue(model.Key, out var value)) {
+                UnloadWave(value);
+            }
         }
     }
 }
