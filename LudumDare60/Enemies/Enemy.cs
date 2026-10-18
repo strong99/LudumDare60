@@ -34,6 +34,6 @@ public sealed class Enemy {
     }
     public void Attack() => _attackedThisFrame = true;
     public void Draw() {
-        GoblinModel.Draw(new Vector3(Position.X, 0, Position.Y), FacingRotation, Weapon, WalkPhase, IsWalking, AttackTime, DeathTime);
+        GoblinModel.Draw(Kind, new Vector3(Position.X, 0, Position.Y), FacingRotation, Weapon, WalkPhase, IsWalking, AttackTime, DeathTime);
     }
 }

@@ -12,13 +12,14 @@ public sealed class WaveSpawner(World world) {
     private const Int32 _waveGrowth = 2;
 
     private static readonly EnemyKind _goblinExplorer = new("Explorer", 10, 1.5f, 0f, 0f);
-    private static readonly EnemyKind _goblinEngineerr = new("Engineer", 5, 1.25f, 1f, 0.8f);
+    private static readonly EnemyKind _goblinEngineer = new("Engineer", 5, 1.25f, 1f, 0.8f);
     private static readonly EnemyKind _goblinFigher = new("Fighter", 20, 1f, 0.2f, 0.2f);
     private readonly Random _random = new();
 
     private Double _waveTimer = _firstWaveDelay;
     private Double _enemyTimer;
     private Int32 _remainingInWave;
+    private List<EnemyKind> _queue = [];
     private Tile? _entrance;
 
     public Int32 WaveNumber { get; private set; }
@@ -31,7 +32,8 @@ public sealed class WaveSpawner(World world) {
             }
 
             WaveNumber++;
-            _remainingInWave = _baseWaveSize + (WaveNumber - 1) * _waveGrowth;
+            _queue = BuildWave(WaveNumber);
+            _remainingInWave = _queue.Count;
             _waveTimer += _waveInterval;
             _enemyTimer = 0;
 
@@ -49,7 +51,8 @@ public sealed class WaveSpawner(World world) {
         _enemyTimer -= deltaTime;
 
         while (_remainingInWave > 0 && _enemyTimer <= 0) {
-            if (!TrySpawnAt(_entrance)) {
+            var kind = _queue[^_remainingInWave];
+            if (!TrySpawnAt(_entrance, kind)) {
                 _remainingInWave = 0;
                 return;
             }
@@ -59,10 +62,39 @@ public sealed class WaveSpawner(World world) {
         }
     }
 
-    private Boolean TrySpawnAt(Tile entrance) {
+    private List<EnemyKind> BuildWave(Int32 wave) {
+        var size = _baseWaveSize + (wave - 1) * _waveGrowth;
+
+        var engineers = wave <= 2 ? 0 : wave <= 5 ? 1 : 2;
+
+        var fighters = wave <= 3 ? 0 : Math.Min(5, wave - 2);
+
+        if (wave > 5) {
+            var explorerShare = Math.Max(0.25, 1.0 - (wave - 5) * 0.1);
+            var explorers = (Int32)Math.Round(size * explorerShare);
+            fighters = Math.Max(fighters, size - engineers - explorers);
+        }
+
+        engineers = Math.Min(engineers, size);
+        fighters = Math.Min(fighters, size - engineers);
+
+        var kinds = new List<EnemyKind>(size);
+        kinds.AddRange(Enumerable.Repeat(_goblinEngineer, engineers));
+        kinds.AddRange(Enumerable.Repeat(_goblinFigher, fighters));
+        kinds.AddRange(Enumerable.Repeat(_goblinExplorer, size - engineers - fighters));
+
+        for (var i = kinds.Count - 1; i > 0; i--) {
+            var j = _random.Next(i + 1);
+            (kinds[i], kinds[j]) = (kinds[j], kinds[i]);
+        }
+
+        return kinds;
+    }
+
+    private Boolean TrySpawnAt(Tile entrance, EnemyKind kind) {
         var enemy = new Enemy {
-            Kind = _goblinExplorer,
-            HitPoints = _goblinExplorer.MaxHitPoints,
+            Kind = kind,
+            HitPoints = kind.MaxHitPoints,
             Memory = world.EnemyKnowledge.Clone(),
             Weapon = Random.Shared.Next(2) == 0 ? Weapon.Sword : Weapon.Mace,
             Position = new Vector2(entrance.X + 0.5f, entrance.Y + 0.5f),
