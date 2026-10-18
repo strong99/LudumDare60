@@ -11,6 +11,7 @@ public sealed unsafe class Saw : Trap {
     private const Single _revolutionsPerSecond = 2f;
     private const Int32 _damage = 1;
     private const Single _steamCost = 0.25f;
+    public const Single SteamCost = _steamCost;
     private const Double _hitInterval = 0.25;
     private const String _fileName = "Assets/Saws.glb";
 

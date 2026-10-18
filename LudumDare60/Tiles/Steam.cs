@@ -7,6 +7,7 @@ public sealed class Steam : Trap {
     private const Single _triggerDistance = 1f;
     private const Int32 _damage = 1;
     private const Single _steamCost = 0.5f;
+    public const Single SteamCost = _steamCost;
     private const Double _hitInterval = 0.5;
 
     private readonly ModelHandle _model;

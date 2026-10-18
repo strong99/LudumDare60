@@ -10,7 +10,7 @@ public sealed class BuildMenu : UIElement {
     private const Int32 _fontSize = 16;
     private const Single _gapDegrees = 2f;
 
-    private sealed record Option(String Label, Int32 ScrapCost, Func<Boolean> CanPlace, Action Place, Action<Vector3, Color>? DrawPreview = null, Boolean PreviewHasFloor = false);
+    private sealed record Option(String Label, Int32 ScrapCost, Func<Boolean> CanPlace, Action Place, Action<Vector3, Color>? DrawPreview = null, Boolean PreviewHasFloor = false, String? Steam = null);
 
     private readonly Option[] _options;
     private readonly World _world;
@@ -19,8 +19,10 @@ public sealed class BuildMenu : UIElement {
     private readonly Vector3 _previewCentre;
     private readonly Vector2 _centre = GetMousePosition();
     private Int32 _hovered = -1;
+    private readonly TextureHandle _scrapIcon;
 
-    public BuildMenu(World world, Tile worldTile, OpenTile tile, EdgeSide edge, ResourceManager resources, Action close) {
+    public BuildMenu(World world, Tile worldTile, OpenTile tile, EdgeSide edge, ResourceManager resources, TextureHandle scrapIcon, Action close) {
+        _scrapIcon = scrapIcon;
         _close = close;
         _previewCentre = new Vector3(worldTile.X + 0.5f, 0f, worldTile.Y + 0.5f);
 
@@ -45,19 +47,19 @@ public sealed class BuildMenu : UIElement {
             new("wall", 20, () => true, () => world.SetEdge(worldTile, edge, wall),
                 (centre, tint) => wall.Draw(centre, edge, tint)),
             new("boiler", 50, () => true, () => world.SetContent(worldTile, boiler),
-                boiler.Draw, PreviewHasFloor: boiler.RendersOwnFloor),
+                boiler.Draw, PreviewHasFloor: boiler.RendersOwnFloor, Steam: "+10 /s"),
             new("relay", 30, () => true, () => world.SetContent(worldTile, relay),
-                relay.Draw, PreviewHasFloor: relay.RendersOwnFloor),
+                relay.Draw, PreviewHasFloor: relay.RendersOwnFloor, Steam: "buffer"),
             new("steam", 40, () => true, () => world.SetContent(worldTile, steam),
-                steam.Draw, PreviewHasFloor: steam.RendersOwnFloor),
+                steam.Draw, PreviewHasFloor: steam.RendersOwnFloor, Steam: $"{Steam.SteamCost} / hit"),
             new("crusher", 80,
                 () => CrusherBody() is not null,
                 () => world.TryPlace(new Crusher(resources, world, worldTile, CrusherBody()!, edge)),
-                (centre, tint) => Crusher.Draw(crusherModel, centre, edge, 0, 0, tint)),
+                (centre, tint) => Crusher.Draw(crusherModel, centre, edge, 0, 0, tint), Steam: $"{Crusher.SteamCost} / stroke"),
             new("saw", 60, () => true, () => world.SetContent(worldTile, saw),
-                saw.Draw, PreviewHasFloor: saw.RendersOwnFloor),
+                saw.Draw, PreviewHasFloor: saw.RendersOwnFloor, Steam: $"{Saw.SteamCost} / hit"),
             new("spikes", 25, () => true, () => world.SetContent(worldTile, nails),
-                nails.Draw, PreviewHasFloor: nails.RendersOwnFloor),
+                nails.Draw, PreviewHasFloor: nails.RendersOwnFloor, Steam: $"{Spikes.SteamCost} / hit"),
         ];
         if (!DamagedStores(tile, edge).Any()) {
             _options = _options.Where(x => x.Label != "repair").ToArray();
@@ -120,6 +122,32 @@ public sealed class BuildMenu : UIElement {
         }
     }
 
+    private void DrawCostPanel(Option option) {
+        const Int32 size = 14;
+        var y = (Int32)_centre.Y - 22;
+        var title = option.Label;
+        DrawText(title, (Int32)_centre.X - MeasureText(title, size) / 2, y, size, Color.White);
+
+        var cost = option.ScrapCost.ToString();
+        var scrapWidth = _scrapIcon.Texture.Width + 4 + MeasureText(cost, size);
+        var x = (Int32)_centre.X - scrapWidth / 2;
+        y += size + 4;
+        DrawTexture(_scrapIcon, x, y + (size - _scrapIcon.Texture.Height) / 2, Color.White);
+        DrawText(cost, x + _scrapIcon.Texture.Width + 4, y, size, _world.CanAfford(option.ScrapCost) ? Color.White : Color.Red);
+
+        if (option.Steam is { } steam) {
+            y += size + 4;
+            var width = size + 4 + MeasureText(steam, 12);
+            x = (Int32)_centre.X - width / 2;
+            // Steam icon: a small cloud.
+            var cy = y + size / 2;
+            DrawCircle(x + 4, cy + 2, 4, Color.SkyBlue);
+            DrawCircle(x + 9, cy - 1, 5, Color.SkyBlue);
+            DrawCircle(x + 13, cy + 2, 4, Color.SkyBlue);
+            DrawText(steam, x + size + 4, y + 1, 12, Color.SkyBlue);
+        }
+    }
+
     public void Draw() {
         for (var i = 0; i < _options.Length; i++) {
             var option = _options[i];
@@ -131,9 +159,13 @@ public sealed class BuildMenu : UIElement {
             var mid = (start + end) / 2f * MathF.PI / 180f;
             var labelRadius = (_innerRadius + _outerRadius) / 2f;
             var labelPosition = _centre + new Vector2(MathF.Cos(mid), MathF.Sin(mid)) * labelRadius;
-            var label = option.ScrapCost > 0 ? $"{option.Label} ({option.ScrapCost})" : option.Label;
+            var label = option.Label;
             var textColour = CanBuild(option) ? Color.White : Color.Gray;
             DrawText(label, (Int32)labelPosition.X - MeasureText(label, _fontSize) / 2, (Int32)labelPosition.Y - _fontSize / 2, _fontSize, textColour);
+        }
+
+        if (_hovered >= 0) {
+            DrawCostPanel(_options[_hovered]);
         }
     }
 }

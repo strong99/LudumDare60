@@ -20,7 +20,7 @@ public sealed class PlayState(App app) : GameState {
     private EdgeSide _hoveredEdgeIndex = EdgeSide.North;
     private TowerCore _towerCoreRef;
     private Tile? _towerCoreTile;
-    private Boolean _showSteamDebug = true;
+    private Boolean _showSteamDebug = false;
     private ModelHandle _cityScape;
     private TextureHandle _warningIcon;
     private TextureHandle _scrapIcon;
@@ -213,7 +213,7 @@ public sealed class PlayState(App app) : GameState {
         if (_buildMenu is null && _hoveredTile is { Content: OpenTile open } hovered) {
             if (IsMouseButtonPressed(MouseButton.Left)) {
                 _displayHint = false;
-                _buildMenu = new BuildMenu(app.World!, hovered, open, _hoveredEdgeIndex, app.Resources, () => _buildMenu = null);
+                _buildMenu = new BuildMenu(app.World!, hovered, open, _hoveredEdgeIndex, app.Resources, _scrapIcon, () => _buildMenu = null);
             }
         }
         else if (_buildMenu is not null && IsKeyPressed(KeyboardKey.Escape)) {
@@ -282,6 +282,7 @@ public sealed class PlayState(App app) : GameState {
 
         DrawScrapLabels();
 
+        DrawSteamGauges(world);
         if (_showSteamDebug) {
             DrawSteamDebug(world);
         }
@@ -319,6 +320,62 @@ public sealed class PlayState(App app) : GameState {
         public Vector3 Origin { get; } = origin;
         public Int32 Amount { get; } = amount;
         public Single Age { get; set; }
+    }
+
+    private const Single _lowSteam = 1.5f;
+
+    /// <summary>
+    /// Always-on steam feedback: a pressure bar above every boiler, relay and trap (red when a trap no longer
+    /// holds enough steam to fire), and a leak marker above damaged pipes.
+    /// </summary>
+    private void DrawSteamGauges(World world) {
+        var seen = new HashSet<SteamStore>();
+        foreach (var tile in world.Tiles) {
+            if (tile.Content is not OpenTile open) {
+                continue;
+            }
+
+            if (open.Content is SteamConnected machine && seen.Add(machine.Store)) {
+                var store = machine.Store;
+                var anchor = new Vector3(tile.X + 0.5f, 0.9f, tile.Y + 0.5f);
+                var isSource = store.Production > 0;
+                var starved = !isSource && machine is Trap && store.Steam < _lowSteam;
+                DrawGauge(anchor, store, starved, isSource ? "BOILER" : machine is Trap ? null : "RELAY");
+            }
+
+            for (var i = 0; i < open.Edges.Length; i++) {
+                if (open.Edges[i] is not SteamConnected pipe || pipe.Store.DamagePoints == 0 || !seen.Add(pipe.Store)) {
+                    continue;
+                }
+
+                var offset = (EdgeSide)i switch {
+                    EdgeSide.North => new Vector3(0, 0, -0.5f),
+                    EdgeSide.South => new Vector3(0, 0, 0.5f),
+                    EdgeSide.East => new Vector3(0.5f, 0, 0),
+                    _ => new Vector3(-0.5f, 0, 0),
+                };
+                var screen = GetWorldToScreen(new Vector3(tile.X + 0.5f, 0.4f, tile.Y + 0.5f) + offset, _camera);
+                var text = new String('!', pipe.Store.DamagePoints);
+                DrawText(text, (Int32)screen.X - MeasureText(text, 16) / 2, (Int32)screen.Y - 8, 16, Color.Red);
+            }
+        }
+    }
+
+    private void DrawGauge(Vector3 anchor, SteamStore store, Boolean starved, String? caption) {
+        const Int32 width = 34;
+        const Int32 height = 5;
+        var screen = GetWorldToScreen(anchor, _camera);
+        var x = (Int32)screen.X - width / 2;
+        var y = (Int32)screen.Y;
+        var pressure = Math.Clamp(store.Pressure, 0f, 1f);
+        var fill = starved ? Color.Red : pressure > 0.6f ? Color.SkyBlue : pressure > 0.3f ? Color.Yellow : Color.Orange;
+
+        DrawRectangle(x - 1, y - 1, width + 2, height + 2, Color.Black);
+        DrawRectangle(x, y, (Int32)(width * pressure), height, fill);
+        var text = starved ? "NO STEAM" : caption;
+        if (text is not null) {
+            DrawText(text, (Int32)screen.X - MeasureText(text, 10) / 2, y - 12, 10, starved ? Color.Red : Color.White);
+        }
     }
 
     private void DrawSteamDebug(World world) {
@@ -368,7 +425,7 @@ public sealed class PlayState(App app) : GameState {
         _ssao = new SsaoPass(_camera.FovY);
         _waveSpawner = new WaveSpawner(world);
         Func<TextureHandle> labelBackgroundTexture = ()=>app.Resources.GetOrLoadTexture("Assets/Button.png");
-        _countDownCounter = new(3600, labelBackgroundTexture(), app.Resources.GetOrLoadTexture("Assets/IconClock.png"));
+        _countDownCounter = new(1200, labelBackgroundTexture(), app.Resources.GetOrLoadTexture("Assets/IconClock.png"));
         _scrapCounter = new(() => app.World.Scraps, labelBackgroundTexture(), app.Resources.GetOrLoadTexture("Assets/IconScraps.png"));
 
         var screenWidth = GetScreenWidth();

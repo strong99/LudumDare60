@@ -72,6 +72,13 @@ Distance loss, trap consumption and leaks therefore emerge from the pressure gra
 
 Damaged nodes can be repaired for scrap.
 
+Player feedback on the Steam network:
+- F3: toggle debug / actual numbers
+- Boilers, relays and traps show a coloured pressure bar: blue is fine, orange is low and red is dangerous low.
+- A trap that holds too little steam to trigger itself shows a red bar with "NO STEAM".
+- The pipes darken as their pressure drops
+- Damaged pipes show red `!` marks, one `!` per damage point.
+
 ### Pathfinding
 
 When an enemy enters the tower they will move forward on air tiles, exploring.

@@ -14,6 +14,7 @@ public sealed unsafe class Crusher : Trap, MultiTileContent {
     private const Single _speed = 0.5f;
     private const Int32 _damage = 5;
     private const Single _steamCost = 1.5f;
+    public const Single SteamCost = _steamCost;
 
     private const Int32 _crusherMesh = 0;
     private const Int32 _gearMesh = 1;
