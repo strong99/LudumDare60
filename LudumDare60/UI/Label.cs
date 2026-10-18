@@ -23,14 +23,18 @@ public sealed class Label(String text, Vector2 position, TextureHandle texture) 
     } = text;
     private Boolean _isDirty = true;
     private Int32 _textWidth = 0;
+    private Int32 _textHeight = 0;
     public void Progress(Double deltaTime) {
         if (_isDirty) {
+
+            var countRows = Text.Count(t => t == '\n') + 1;
+            _textHeight = countRows * FontSize;
             _textWidth = MeasureText(Text, FontSize);
             _isDirty = false;
         }
     }
     public void Draw() {
         DrawTexture(Texture, (Int32)Position.X - Texture.Texture.Width / 2, (Int32)Position.Y - Texture.Texture.Height / 2, Color.Black);
-        DrawText(Text, (Int32)Position.X - _textWidth / 2, (Int32)Position.Y - FontSize / 2, FontSize, Color.White);
+        DrawText(Text, (Int32)Position.X - _textWidth / 2, (Int32)Position.Y - _textHeight / 2, FontSize, Color.White);
     }
 }

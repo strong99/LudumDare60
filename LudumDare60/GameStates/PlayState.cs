@@ -53,6 +53,7 @@ public sealed class PlayState(App app) : GameState {
         _countDownCounter.Progress(deltaTime);
         _scrapCounter.Progress(deltaTime);
         _buildMenu?.Progress(deltaTime);
+        _displayHintLabel?.Progress(deltaTime);
         _towerCoreCounter.Progress(deltaTime);
 
         if (_countDownCounter.TimeUp) {
@@ -258,6 +259,9 @@ public sealed class PlayState(App app) : GameState {
         _countDownCounter.Draw();
         _scrapCounter.Draw();
         _buildMenu?.Draw();
+        if (_displayHint) {
+            _displayHintLabel?.Draw();
+        }
         _towerCoreCounter.Draw();
         //EndMode2D();
     }
@@ -320,7 +324,9 @@ public sealed class PlayState(App app) : GameState {
             .FirstOrDefault(c => c is not null);
         _towerCoreCounter = new(() => (Int32)MathF.Ceiling(_towerCoreRef?.HitPoints ?? 0), labelBackgroundTexture(), app.Resources.GetOrLoadTexture("Assets/IconDamage.png"));
 
-        _displayHintLabel = new Label("Defend the Tower Core\nclick a tile to get started.", new(100, 100), app.Resources.GetOrLoadTexture("Assets/Button.png"));
+        var cx = GetScreenWidth() / 2;
+        var cy = GetScreenHeight();
+        _displayHintLabel = new Label("Defend the Tower Core\nMind your Steam volume\nClick a tile to get started.", new(cx - 50, cy - 133), app.Resources.GetOrLoadTexture("Assets/Hint.png"));
 
         _music = new(new DramaticPlayMusicGeneratorStrategy());
         _music.Play();
