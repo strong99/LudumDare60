@@ -18,6 +18,7 @@ public sealed class PlayState(App app) : GameState {
     private EdgeSide _hoveredEdgeIndex = EdgeSide.North;
     private TowerCore _towerCore;
     private Boolean _showSteamDebug = true;
+    private ModelHandle _cityScape;
     private MusicGenerator<DramaticPlayMusicGeneratorStrategy>? _music;
     public void Progress(Double deltaTime) {
         _music?.Progress();
@@ -179,6 +180,10 @@ public sealed class PlayState(App app) : GameState {
             }
         }
 
+        var backgroundScale = 8;
+        var backGroundOffset = 8;
+        DrawModel(_cityScape, new Vector3(backGroundOffset, -12, backGroundOffset), backgroundScale, Color.White);
+
         _buildMenu?.DrawPreview();
 
         EndMode3D();
@@ -246,6 +251,8 @@ public sealed class PlayState(App app) : GameState {
         _waveSpawner = new WaveSpawner(world);
         _countDownCounter = new(3600);
         _scrapCounter = new(() => app.World.Scraps);
+
+        _cityScape = app.Resources.GetOrLoadModel("Assets/CityScape.glb");
 
         _towerCore = world.Tiles
             .Cast<Tile>()
