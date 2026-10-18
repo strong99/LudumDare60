@@ -12,26 +12,28 @@ public sealed class TextButton(String text, Vector2 position, Action<TextButton>
             _isDirty = true;
         }
     } = 12;
-    public Int32 Padding {
-        get;
+    public Int32 Padding { get; set; } = 12;
+    public Vector2 Position { get; set; } = position;
+    public String Text { 
+        get; 
         set {
             field = value;
             _isDirty = true;
         }
-    } = 12;
+    } = text;
     private Boolean _isDirty = true;
-    private Int32 _size = 0;
+    private Int32 _textWidth = 0;
     private Boolean _hover = false;
     public void Progress(Double deltaTime) {
         if (_isDirty) {
-            _size = MeasureText(text, FontSize);
+            _textWidth = MeasureText(Text, FontSize);
             _isDirty = false;
         }
 
         var mousePosition = GetMousePosition();
-        var halfX = _size / 2 + Padding;
+        var halfX = _textWidth / 2 + Padding;
         var halfY = FontSize / 2 + Padding;
-        var relativeMousePosition = mousePosition - position;
+        var relativeMousePosition = mousePosition - Position;
         _hover = relativeMousePosition.X > -halfX && relativeMousePosition.X < halfX &&
                  relativeMousePosition.Y > -halfY && relativeMousePosition.Y < halfY;
         if (_hover) {
@@ -41,6 +43,6 @@ public sealed class TextButton(String text, Vector2 position, Action<TextButton>
         }
     }
     public void Draw() {
-        DrawText(text, (Int32)position.X - _size / 2, (Int32)position.Y - FontSize / 2, FontSize, _hover ? Color.Blue : Color.Red);
+        DrawText(Text, (Int32)Position.X - _textWidth / 2, (Int32)Position.Y - FontSize / 2, FontSize, _hover ? Color.Blue : Color.Red);
     }
 }
