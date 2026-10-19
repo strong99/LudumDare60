@@ -16,7 +16,6 @@ env:
 
 jobs:
   desktop:
-    if: github.server_url == 'https://github.com'
     name: Desktop (${{ matrix.rid }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -92,7 +91,7 @@ jobs:
   pages:
     name: Deploy to GitHub Pages
     needs: web
-    if: github.server_url == 'https://github.com' && startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment:
       name: github-pages
