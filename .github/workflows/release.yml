@@ -16,6 +16,7 @@ env:
 
 jobs:
   desktop:
+    if: github.server_url == 'https://github.com'
     name: Desktop (${{ matrix.rid }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -25,7 +26,7 @@ jobs:
           - { os: windows-latest, rid: win-x64 }
           - { os: ubuntu-latest, rid: linux-x64 }
           - { os: macos-latest, rid: osx-arm64 }
-          - { os: macos-13, rid: osx-x64 }
+          - { os: macos-latest, rid: osx-x64 }
     steps:
       - uses: actions/checkout@v4
 
@@ -91,7 +92,7 @@ jobs:
   pages:
     name: Deploy to GitHub Pages
     needs: web
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.server_url == 'https://github.com' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment:
       name: github-pages
